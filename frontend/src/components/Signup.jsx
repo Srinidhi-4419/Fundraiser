@@ -20,7 +20,7 @@ export const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form Data:', formdata); // Log formdata to check if it's populated correctly
-
+localStorage.setItem('email',formdata.username)
     try {
       const response = await axios.post(
         'http://localhost:3000/api/user/signup',

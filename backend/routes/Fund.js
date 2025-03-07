@@ -1,10 +1,12 @@
 const express = require('express');
 const multer = require('multer');
 const Fundraiser = require('../models/db');
+const {User}=require('../models/userdb')
 const router = express.Router();
 const cloudinary = require('cloudinary').v2;
 const { Readable } = require('stream'); // For buffer handling
 require('dotenv').config();
+const {authmiddleware}=require('./authmiddleware');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -32,44 +34,51 @@ const uploadToCloudinary = (buffer) => {
 };
 
 // Create a new fundraiser with image upload & UPI ID
-router.post('/fundraisers', upload.single('image'), async (req, res) => {
-    try {
-        const { title, description, targetAmount, name, email, type, category, upiId } = req.body;
+router.post('/fundraisers',authmiddleware, upload.single('image'), async (req, res) => {
+  try {
+      const { title, description, targetAmount, name, email, type, category, upiId } = req.body;
 
-        if (!req.file) {
-            return res.status(400).json({ error: "Image is required!" });
-        }
+      if (!req.file) {
+          return res.status(400).json({ error: "Image is required!" });
+      }
 
-        if (!upiId) {
-            return res.status(400).json({ error: "UPI ID is required!" });
-        }
+      if (!upiId) {
+          return res.status(400).json({ error: "UPI ID is required!" });
+      }
 
-        // Upload image to Cloudinary using buffer
-        const uploadResult = await uploadToCloudinary(req.file.buffer);
+      // Upload image to Cloudinary using buffer
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
 
-        // Save fundraiser with image URL, UPI ID, and initialize remainingAmount
-        const newFundraiser = new Fundraiser({
-            title,
-            description,
-            targetAmount,
-            remainingAmount: targetAmount, // Initialize remainingAmount to targetAmount
-            name,
-            email,
-            type,
-            category,
-            imageUrl: uploadResult.secure_url, // Store Cloudinary URL in DB
-            upiId
-        });
+      // Save fundraiser with image URL, UPI ID, and initialize remainingAmount
+      // Also add user association from first example
+      const newFundraiser = new Fundraiser({
+          title,
+          description,
+          targetAmount,
+          remainingAmount: targetAmount, // Initialize remainingAmount to targetAmount
+          name,
+          email,
+          type,
+          category,
+          imageUrl: uploadResult.secure_url, // Store Cloudinary URL in DB
+          upiId,
+          createdBy: req.userid // Add user association
+      });
 
-        await newFundraiser.save();
-        res.status(201).json({ message: "Fundraiser created successfully!", fundraiser: newFundraiser });
+      await newFundraiser.save();
+      
+      // Add fundraiser to user's fundraisersCreated array
+      await User.findByIdAndUpdate(req.userid, {
+          $push: { fundraisersCreated: newFundraiser._id }
+      });
 
-    } catch (err) {
-        console.error("Server Error:", err);
-        res.status(500).json({ error: err.message || "Internal server error" });
-    }
+      res.status(201).json({ message: "Fundraiser created successfully!", fundraiser: newFundraiser });
+
+  } catch (err) {
+      console.error("Server Error:", err);
+      res.status(500).json({ error: err.message || "Internal server error" });
+  }
 });
-
 // Fetch all fundraisers
 router.get('/fundraisers', async (req, res) => {
     try {
@@ -109,6 +118,7 @@ router.get('/fundraisers/category/:category', async (req, res) => {
 });
 // const express = require('express');
 const nodemailer = require('nodemailer');
+// const { authmiddleware } = require('./authmiddleware');
 // const router = express.Router();
 
 router.post('/send-email', async (req, res) => {

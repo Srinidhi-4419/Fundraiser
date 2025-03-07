@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 // import { Heart, Share2, Clock, Users, ArrowLeft, AlertCircle, X } from "lucide-react";
-import { Heart, Share2, Clock, Users, ArrowLeft, AlertCircle, X, Send, MessageSquare } from "lucide-react";
+import { Heart, Share2, Clock, Users, ArrowLeft, AlertCircle, X, Send, MessageSquare, Trophy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast, Toaster } from 'react-hot-toast'
 
@@ -111,11 +111,14 @@ const [donors,setcount]=useState(0);
    const handlePaymentComplete = async () => {
     setProcessingPayment(true);
     try {
+        const token = localStorage.getItem("authToken"); // Retrieve token for Authorization
+
         // Step 1: Process the payment first (update amount)
         const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Include Bearer token
             },
             body: JSON.stringify({ amount: donationAmount })
         });
@@ -139,6 +142,7 @@ const [donors,setcount]=useState(0);
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Include Bearer token
                 },
                 body: JSON.stringify({ 
                     username: username, 
@@ -149,6 +153,23 @@ const [donors,setcount]=useState(0);
             if (!donorResponse.ok) {
                 console.error("Warning: Donation was processed but donor name could not be added");
             }
+        }
+
+        // 🔴 Step 3: Hit /donations endpoint with Authorization header and request body
+        const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Include Bearer token
+            },
+            body: JSON.stringify({ 
+                fundraiserId: id,
+                amount: donationAmount 
+            })
+        });
+
+        if (!donationResponse.ok) {
+            console.error("Warning: Donation record could not be saved.");
         }
 
         // Show success toast notification
@@ -173,6 +194,7 @@ const [donors,setcount]=useState(0);
         setProcessingPayment(false);
     }
 };
+
     
     if (loading) {
         return (

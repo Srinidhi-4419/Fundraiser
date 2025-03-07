@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../models/config');
 const { authmiddleware } = require('./authmiddleware');
 const Fundraiser=require('../models/db')
+const Donation=require('../models/Donation');
 const axios=require('axios');
 const signupbody = zod.object({
     username: zod.string().email(),
@@ -182,4 +183,81 @@ router.post('/getinfo', async (req, res) => {
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
   });
+  router.get('/donations', authmiddleware, async (req, res) => {
+    try {
+        const donations = await Donation.find({ donor: req.userid })
+            .populate('fundraiser')
+            .sort({ createdAt: -1 });
+        
+        res.status(200).json(donations);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+router.get('/dashboard-summary', authmiddleware, async (req, res) => {
+  try {
+      const fundraisers = await Fundraiser.find({ createdBy: req.userid });
+      const donations = await Donation.find({ donor: req.userid });
+      
+      // Calculate statistics
+      const totalRaised = fundraisers.reduce((sum, fundraiser) => 
+          sum + (fundraiser.targetAmount - fundraiser.remainingAmount), 0);
+          
+      const totalDonated = donations.reduce((sum, donation) => 
+          sum + donation.amount, 0);
+      
+      const activeFundraisers = fundraisers.filter(
+          fundraiser => fundraiser.remainingAmount > 0
+      ).length;
+      
+      res.status(200).json({
+          totalFundraisers: fundraisers.length,
+          activeFundraisers,
+          totalRaised,
+          totalDonated,
+          donationsCount: donations.length,
+          fundraisers: fundraisers // Include the actual fundraiser data
+      });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+});
+router.post('/donate', authmiddleware, async (req, res) => {
+  try {
+      const { fundraiserId, amount } = req.body;
+      
+      // Get the fundraiser
+      const fundraiser = await Fundraiser.findById(fundraiserId);
+      if (!fundraiser) {
+          return res.status(404).json({ error: 'Fundraiser not found' });
+      }
+      
+      // Create donation
+      const donation = new Donation({
+          amount,
+          donor: req.userid,
+          fundraiser: fundraiserId,
+          paymentStatus: 'completed'
+      });
+      
+      await donation.save();
+      
+      // Update fundraiser remaining amount
+      fundraiser.remainingAmount = Math.max(0, fundraiser.remainingAmount - amount);
+      
+      // Add donation to fundraiser's donations array
+      fundraiser.donations.push(donation._id);
+      await fundraiser.save();
+      
+      // Add donation to user's donationsMade array
+      await User.findByIdAndUpdate(req.user._id, {
+          $push: { donationsMade: donation._id }
+      });
+      
+      res.status(201).json(donation);
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

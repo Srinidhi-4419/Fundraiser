@@ -9,6 +9,7 @@ import { CategoryPage } from './components/CategoryPage';
 import Detail from './components/Detail';
 import { useState } from 'react';
 import Search from './components/Search';
+import UserDashboard from './components/UserDashboard';
 
 function App() {
   // const [firstname,setfirst]=useState("");
@@ -26,6 +27,7 @@ function App() {
         {/* <Route path="/fundraisers/:category" element={<><Navbar/><CategoryPage /></>} /> */}
         <Route path="/fundraiser/:id" element={<><Navbar/><Detail email={email}/></>} />
         <Route path='/search' element={<><Navbar/><Search/></>}/>
+        <Route path='/userdashboard' element={<><Navbar/><UserDashboard/></>}/>
       </Routes>
     </BrowserRouter>
   );

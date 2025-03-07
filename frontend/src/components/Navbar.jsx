@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Menu, X, Heart, Search, Info, LogIn, LogOut, PlusCircle } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Menu, X, Heart, Search, Info, LogIn, PlusCircle, User, LogOut, LayoutDashboard } from "lucide-react";
 
 export function Navbar() {
     const [authenticated, setAuthenticated] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const profileDropdownRef = useRef(null);
     const navigate = useNavigate();
 
     const handleCreateFund = () => {
@@ -20,6 +22,20 @@ export function Navbar() {
         setAuthenticated(!!localStorage.getItem('authToken'));
     }, []);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+                setProfileDropdownOpen(false);
+            }
+        }
+        
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [profileDropdownRef]);
+
     // Handle sign-in navigation
     const handleSignin = () => {
         navigate('/signin');
@@ -30,7 +46,15 @@ export function Navbar() {
     const handleSignout = () => {
         localStorage.removeItem('authToken');
         setAuthenticated(false);
+        setProfileDropdownOpen(false);
         navigate('/');
+        setMobileMenuOpen(false);
+    };
+
+    // Handle dashboard navigation
+    const handleDashboard = () => {
+        navigate('/userdashboard');
+        setProfileDropdownOpen(false);
         setMobileMenuOpen(false);
     };
 
@@ -49,6 +73,11 @@ export function Navbar() {
     // Toggle mobile menu
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
+    };
+
+    // Toggle profile dropdown
+    const toggleProfileDropdown = () => {
+        setProfileDropdownOpen(!profileDropdownOpen);
     };
 
     return (
@@ -84,15 +113,7 @@ export function Navbar() {
                             <span>About</span>
                         </button>
                         
-                        {authenticated ? (
-                            <button 
-                                onClick={handleSignout}
-                                className="text-gray-600 hover:text-green-600 flex items-center gap-1 transition duration-150"
-                            >
-                                <LogOut size={18} />
-                                <span>Sign Out</span>
-                            </button>
-                        ) : (
+                        {!authenticated && (
                             <button 
                                 onClick={handleSignin}
                                 className="text-gray-600 hover:text-green-600 flex items-center gap-1 transition duration-150"
@@ -104,11 +125,45 @@ export function Navbar() {
 
                         <button 
                             onClick={handleCreateFund}
-                            className="ml-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full px-5 py-2 flex items-center gap-1 transition duration-150 shadow-sm"
+                            className="bg-green-600 hover:bg-green-700 text-white font-medium rounded-full px-5 py-2 flex items-center gap-1 transition duration-150 shadow-sm"
                         >
                             <PlusCircle size={18} />
                             <span>Start a Fundraiser</span>
                         </button>
+                        
+                        {/* Profile at the rightmost position */}
+                        {authenticated && (
+                            <div className="relative ml-2" ref={profileDropdownRef}>
+                                <button 
+                                    onClick={toggleProfileDropdown}
+                                    className="text-gray-600 hover:text-green-600 flex items-center gap-1 transition duration-150 p-2 rounded-full hover:bg-gray-100"
+                                    aria-expanded={profileDropdownOpen}
+                                    aria-haspopup="true"
+                                >
+                                    <User size={20} />
+                                </button>
+                                
+                                {/* Profile dropdown menu */}
+                                {profileDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                        <button
+                                            onClick={handleDashboard}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                        >
+                                            <LayoutDashboard size={16} />
+                                            <span>Dashboard</span>
+                                        </button>
+                                        <button
+                                            onClick={handleSignout}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                        >
+                                            <LogOut size={16} />
+                                            <span>Sign Out</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}
@@ -149,13 +204,22 @@ export function Navbar() {
                             <span>About</span>
                         </button>
                         {authenticated ? (
-                            <button 
-                                onClick={handleSignout}
-                                className="w-full text-left block px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-2"
-                            >
-                                <LogOut size={18} />
-                                <span>Sign Out</span>
-                            </button>
+                            <>
+                                <button 
+                                    onClick={handleDashboard}
+                                    className="w-full text-left block px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-2"
+                                >
+                                    <LayoutDashboard size={18} />
+                                    <span>Dashboard</span>
+                                </button>
+                                <button 
+                                    onClick={handleSignout}
+                                    className="w-full text-left block px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-600 flex items-center gap-2"
+                                >
+                                    <LogOut size={18} />
+                                    <span>Sign Out</span>
+                                </button>
+                            </>
                         ) : (
                             <button 
                                 onClick={handleSignin}
