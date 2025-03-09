@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { User, Mail, Bookmark, ChevronRight } from "lucide-react";
-import toast from "react-hot-toast";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export function Six({ onSelect }) {
   // Use useMemo for initial state to prevent re-initialization
@@ -73,9 +74,13 @@ export function Six({ onSelect }) {
   const handleSubmit = useCallback(() => {
     if (validateForm()) {
       // Show success toast
-      toast.success("Details saved successfully", {
-        duration: 2000,
-        position: "top-right"
+      toast.success('Saved successfully please click on continue....', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
 
       // Call parent component's select method
@@ -118,6 +123,7 @@ export function Six({ onSelect }) {
   }, [formData, touched, errors, handleChange, handleBlur]);
 
   return (
+    <>
     <div className="flex flex-col space-y-6 pt-36 max-w-md mx-auto w-full">
       <div className="text-center">
         <h2 className="text-2xl font-semibold text-gray-800 mb-1">Fundraiser Details</h2>
@@ -138,6 +144,8 @@ export function Six({ onSelect }) {
         <ChevronRight className="ml-2 h-4 w-4" />
       </button>
     </div>
+    <ToastContainer />
+    </>
   );
 }
 

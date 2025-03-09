@@ -1,5 +1,6 @@
 import { useState } from "react";
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 export default function AccountDetailsForm({ onNext }) {
   const [upiId, setUpiId] = useState("");
   const [error, setError] = useState("");
@@ -18,14 +19,31 @@ export default function AccountDetailsForm({ onNext }) {
     
     if (!validateUPI(upiId)) {
       setError("Please enter a valid UPI ID (e.g., username@ybl)");
+      toast.error('Please enter a valid upi id', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return;
     }
+    toast.success('Saved Successfully', {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
     
     setError("");
     onNext({ upiId }); // Pass UPI ID to parent component
   };
 
   return (
+    <>
     <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
       <div className="flex items-center mb-6">
         <div className="bg-green-100 p-3 rounded-full">
@@ -97,5 +115,7 @@ export default function AccountDetailsForm({ onNext }) {
         </button>
       </div>
     </div>
+    <ToastContainer />
+    </>
   );
 }

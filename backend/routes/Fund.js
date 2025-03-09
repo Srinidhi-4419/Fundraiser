@@ -102,7 +102,8 @@ router.get('/fundraisers/category/:category', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message || "Internal server error" });
     }
-});router.get('/fundraisers/:id', async (req, res) => {
+});
+router.get('/fundraisers/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const fundraiser = await Fundraiser.findById(id);
@@ -116,6 +117,78 @@ router.get('/fundraisers/category/:category', async (req, res) => {
         res.status(500).json({ error: err.message || "Internal server error" });
     }
 });
+router.put('/fundraisers/:id', authmiddleware, async (req, res) => {
+  try {
+      const { id } = req.params;
+      const userId = req.userid; // Assuming auth middleware adds user to req
+      
+      const {
+          title,
+          description,
+          imageUrl,
+          targetAmount,
+          name,
+          email,
+          type,
+          category,
+          upiId
+      } = req.body;
+
+      // Find the fundraiser
+      const fundraiser = await Fundraiser.findById(id);
+      
+      // Check if fundraiser exists
+      if (!fundraiser) {
+          return res.status(404).json({ message: "Fundraiser not found" });
+      }
+      
+      // Verify that the user is the creator of the fundraiser
+      if (fundraiser.createdBy.toString() !== userId) {
+          return res.status(403).json({ message: "You are not authorized to update this fundraiser" });
+      }
+
+      // Check if target amount is being reduced and ensure it's not less than already collected amounts
+      const collectedAmount = fundraiser.targetAmount - fundraiser.remainingAmount;
+      if (targetAmount < collectedAmount) {
+          return res.status(400).json({ 
+              message: "Target amount cannot be less than already collected amount" 
+          });
+      }
+
+      // Calculate new remaining amount based on the updated target amount
+      const newRemainingAmount = targetAmount - collectedAmount;
+
+      // Update the fundraiser
+      const updatedFundraiser = await Fundraiser.findByIdAndUpdate(
+          id,
+          {
+              title,
+              description,
+              imageUrl,
+              targetAmount,
+              remainingAmount: newRemainingAmount,
+              name,
+              email,
+              type,
+              category,
+              upiId
+          },
+          { new: true } // Return the updated document
+      );
+
+      res.status(200).json({
+          message: "Fundraiser updated successfully",
+          fundraiser: updatedFundraiser
+      });
+  } catch (err) {
+      console.error("Error updating fundraiser:", err);
+      res.status(500).json({ 
+          message: "Server error",
+          error: err.message
+      });
+  }
+});
+
 // const express = require('express');
 const nodemailer = require('nodemailer');
 // const { authmiddleware } = require('./authmiddleware');
@@ -317,5 +390,27 @@ router.get('/fundraiser/:id/donors', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+router.post('/upload-image', authmiddleware, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+
+    // Upload image to Cloudinary using the buffer
+    const uploadResult = await uploadToCloudinary(req.file.buffer);
+
+    // Return the secure URL for the frontend to use
+    return res.status(200).json({ 
+      message: "Image uploaded successfully",
+      imageUrl: uploadResult.secure_url
+    });
+  } catch (err) {
+    console.error("Error uploading image:", err);
+    return res.status(500).json({ 
+      error: "Failed to upload image",
+      details: err.message 
+    });
+  }
 });
 module.exports = router;

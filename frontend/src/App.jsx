@@ -10,6 +10,9 @@ import Detail from './components/Detail';
 import { useState } from 'react';
 import Search from './components/Search';
 import UserDashboard from './components/UserDashboard';
+import UpdateFundraisers from './components/UpdateFundraisers';
+import AboutPage from './components/AboutPage';
+import ExploreCauses from './components/ExploreCauses';
 
 function App() {
   // const [firstname,setfirst]=useState("");
@@ -28,6 +31,9 @@ function App() {
         <Route path="/fundraiser/:id" element={<><Navbar/><Detail email={email}/></>} />
         <Route path='/search' element={<><Navbar/><Search/></>}/>
         <Route path='/userdashboard' element={<><Navbar/><UserDashboard/></>}/>
+        <Route path='/fundraiser/update/:id' element={<><Navbar/><UpdateFundraisers/></>}/>
+        <Route path='/about' element={<><AboutPage/></>}/>
+        <Route path='/explore' element={<><ExploreCauses/></>}/>
       </Routes>
     </BrowserRouter>
   );

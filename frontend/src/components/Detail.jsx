@@ -21,6 +21,7 @@ const [donors,setcount]=useState(0);
     const donationOptions = [100, 500, 1000, 5000];
     const [showMessageModal, setShowMessageModal] = useState(false);
     const [messageText, setMessageText] = useState('');
+    const [donateAnonymously, setDonateAnonymously] = useState(false);
     useEffect(() => {
         const fetchFundraiserDetails = async () => {
             setLoading(true);
@@ -111,14 +112,15 @@ const [donors,setcount]=useState(0);
    const handlePaymentComplete = async () => {
     setProcessingPayment(true);
     try {
-        const token = localStorage.getItem("authToken"); // Retrieve token for Authorization
+        const token = localStorage.getItem("authToken");
 
-        // Step 1: Process the payment first (update amount)
+        // We should only update the amount in ONE place
+        // Let's keep the /update-amount endpoint as the single source of truth
         const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Include Bearer token
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ amount: donationAmount })
         });
@@ -134,18 +136,18 @@ const [donors,setcount]=useState(0);
         setFundraiser(updatedFundraiser);
 
         // Step 2: Get username from localStorage and update donors list
-        const username = localStorage.getItem('email'); // Get email from localStorage
+        // This endpoint should NOT update the amount again
+        const username = localStorage.getItem('email');
         
         if (username) {
-            // Call our new endpoint to add donor to the fundraiser
             const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Include Bearer token
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    username: username, 
+                    username: donateAnonymously ? "Anonymous" : username, 
                     fundraiserId: id 
                 })
             });
@@ -155,12 +157,13 @@ const [donors,setcount]=useState(0);
             }
         }
 
-        // 🔴 Step 3: Hit /donations endpoint with Authorization header and request body
+        // Step 3: Record the donation for tracking purposes
+        // This endpoint should also NOT update the fundraiser amount
         const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Include Bearer token
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ 
                 fundraiserId: id,
@@ -172,17 +175,14 @@ const [donors,setcount]=useState(0);
             console.error("Warning: Donation record could not be saved.");
         }
 
-        // Show success toast notification
         toast.success(`Thank you! Your donation of ₹${formatCurrency(donationAmount)} was successful.`, {
             duration: 5000,
             position: 'top-center',
             icon: '🎉',
         });
 
-        // Close the modal and redirect to /funds route after a short delay
         setShowPaymentModal(false);
         
-        // Delay navigation to allow the user to see the toast notification
         setTimeout(() => {
             navigate('/funds');
         }, 2000);
@@ -194,7 +194,6 @@ const [donors,setcount]=useState(0);
         setProcessingPayment(false);
     }
 };
-
     
     if (loading) {
         return (
@@ -285,76 +284,90 @@ const [donors,setcount]=useState(0);
         <div className="min-h-screen bg-gray-50">
             {/* Payment Modal */}
             {showPaymentModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-800">Google Pay QR Code</h3>
-                            <button 
-                                onClick={() => setShowPaymentModal(false)}
-                                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                        
-                        <div className="text-center">
-                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                <p className="text-sm text-gray-600 mb-2">Scan this QR code with Google Pay to donate</p>
-                                <div className="flex justify-center">
-                                    {/* QR code component */}
-                                    <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                                        <QRCodeSVG 
-                                            value={upiPaymentString}
-                                            size={250}
-                                            level="H"
-                                            includeMargin={true}
-                                        />
-                                    </div>
-                                </div>
-                                <p className="text-sm text-gray-500 mt-2">Open Google Pay app and tap 'Scan QR'</p>
-                            </div>
-                            
-                            <div className="mb-4">
-                                <p className="text-sm text-gray-600">Amount</p>
-                                <p className="text-2xl font-bold text-emerald-600">₹{formatCurrency(donationAmount)}</p>
-                            </div>
-                            
-                            <div className="mb-6">
-                                <p className="text-sm text-gray-600">UPI ID</p>
-                                <p className="text-lg font-medium">{upiId}</p>
-                                <p className="text-xs text-gray-500 mt-1">Payment will be processed through Google Pay</p>
-                            </div>
-                            
-                            <div className="flex flex-col space-y-3">
-                                <button 
-                                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
-                                    onClick={handlePaymentComplete}
-                                    disabled={processingPayment}
-                                >
-                                    {processingPayment ? (
-                                        <div className="flex items-center">
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            Processing...
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <span className="mr-2" dangerouslySetInnerHTML={{ __html: googlePayLogo }} />
-                                            I've Completed the Payment
-                                        </>
-                                    )}
-                                </button>
-                                <button 
-                                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
-                                    onClick={() => setShowPaymentModal(false)}
-                                    disabled={processingPayment}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Google Pay QR Code</h3>
+                <button 
+                    onClick={() => setShowPaymentModal(false)}
+                    className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                >
+                    <X size={24} />
+                </button>
+            </div>
+            
+            <div className="text-center">
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-gray-600 mb-2">Scan this QR code with Google Pay to donate</p>
+                    <div className="flex justify-center">
+                        {/* QR code component */}
+                        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                            <QRCodeSVG 
+                                value={upiPaymentString}
+                                size={250}
+                                level="H"
+                                includeMargin={true}
+                            />
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 mt-2">Open Google Pay app and tap 'Scan QR'</p>
                 </div>
-            )}
+                
+                <div className="mb-4">
+                    <p className="text-sm text-gray-600">Amount</p>
+                    <p className="text-2xl font-bold text-emerald-600">₹{formatCurrency(donationAmount)}</p>
+                </div>
+                
+                <div className="mb-6">
+                    <p className="text-sm text-gray-600">UPI ID</p>
+                    <p className="text-lg font-medium">{upiId}</p>
+                    <p className="text-xs text-gray-500 mt-1">Payment will be processed through Google Pay</p>
+                </div>
+                
+                {/* Added Anonymous Donation Checkbox */}
+                <div className="flex items-center mb-4">
+                    <input
+                        type="checkbox"
+                        id="anonymousDonation"
+                        checked={donateAnonymously}
+                        onChange={() => setDonateAnonymously(!donateAnonymously)}
+                        className="w-4 h-4 text-emerald-500 border-gray-300 rounded focus:ring-emerald-500"
+                    />
+                    <label htmlFor="anonymousDonation" className="ml-2 text-sm text-gray-600">
+                        Donate anonymously
+                    </label>
+                </div>
+                
+                <div className="flex flex-col space-y-3">
+                    <button 
+                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+                        onClick={handlePaymentComplete}
+                        disabled={processingPayment}
+                    >
+                        {processingPayment ? (
+                            <div className="flex items-center">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                Processing...
+                            </div>
+                        ) : (
+                            <>
+                                <span className="mr-2" dangerouslySetInnerHTML={{ __html: googlePayLogo }} />
+                                I've Completed the Payment
+                            </>
+                        )}
+                    </button>
+                    <button 
+                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+                        onClick={() => setShowPaymentModal(false)}
+                        disabled={processingPayment}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
  {showMessageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">

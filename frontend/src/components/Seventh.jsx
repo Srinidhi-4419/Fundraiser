@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import toast from "react-hot-toast";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export function Seventh({ formdata, handlePrev }) {
   const [loading, setLoading] = useState(false);
@@ -46,10 +47,14 @@ const token=localStorage.getItem('authToken');
         }
     );
 
-      // Show toast first
-      toast.success("Fundraiser Created successfully", {
-        duration: 2000 // Optional: specify duration
-      });
+    toast.success('Fundraiser Created Successfully', {
+  position: "top-right",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+});
 
       // Navigate after a short delay to ensure toast is visible
       setTimeout(() => {
@@ -59,13 +64,21 @@ const token=localStorage.getItem('authToken');
     } catch (error) {
       console.error("Error:", error.response?.data || error.message);
       setError(error.response?.data?.error || "Failed to submit fundraiser.");
-      toast.error(error.response?.data?.error || "Failed to submit fundraiser.");
+        toast.error('Failed to create Fundraiser', {
+  position: "top-right",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+});
     } finally {
       setLoading(false);
     }
   };
 
   return (
+  <>
     <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header with progress indicator */}
       <div className="bg-gradient-to-r from-green-500 to-green-600 py-4 px-8">
@@ -237,5 +250,7 @@ const token=localStorage.getItem('authToken');
         </div>
       </div>
     </div>
+    <ToastContainer />
+    </>
   );
 }

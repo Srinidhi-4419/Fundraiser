@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Heart, PiggyBank, Gift, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Simplified Card component
 const Card = ({ children, className }) => (
@@ -37,6 +38,7 @@ const Progress = ({ value }) => (
 );
 
 const UserDashboard = () => {
+  const navigate=useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardData, setDashboardData] = useState(null);
   const [donations, setDonations] = useState([]);
@@ -292,9 +294,12 @@ const UserDashboard = () => {
                   </div>
                   
                   <div className="mt-4 flex justify-between">
-                    <button className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm">
-                      View Details
-                    </button>
+                  <button 
+  onClick={() => navigate(`/fundraiser/update/${fundraiser._id}`)}
+  className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+>
+  Update Details
+</button>
                     {fundraiser.remainingAmount > 0 ? (
                       <button className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm">
                         Share

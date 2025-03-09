@@ -6,7 +6,8 @@ import { Button } from '../pages/Button';
 import { ButtonWarning } from '../pages/ButtonWarning';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const Signin = ({setemail}) => {
   const [formdata, setFormData] = useState({
     username: '', // Email
@@ -38,16 +39,33 @@ const Signin = ({setemail}) => {
       );
       console.log('Response:', response.data);
 
-      // If authentication is successful and token is received
+      toast.success('Signin successful!...', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      // After successful sign-up, redirect to /funds
       if (response.data.token) {
-        
         localStorage.setItem('authToken', response.data.token);
-        
-        
-        navigate('/funds');
+        // Short delay before redirect to allow user to see the toast
+        setTimeout(() => {
+          navigate('/funds');
+        }, 2000);
       }
     } catch (error) {
       console.error('Error signing in:', error);
+      toast.error('Invalid username or password', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       setError('Invalid username or password'); // Display error message
     }
   };
@@ -84,6 +102,7 @@ const Signin = ({setemail}) => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 };

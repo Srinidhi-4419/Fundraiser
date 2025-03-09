@@ -6,7 +6,8 @@ import { Button } from '../pages/Button';
 import { ButtonWarning } from '../pages/ButtonWarning';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 export const Signup = () => {
   const [formdata, setFormData] = useState({
     username: '',
@@ -31,19 +32,40 @@ localStorage.setItem('email',formdata.username)
       );
       console.log('Response:', response.data);
 
+      toast.success('Signup successful! Redirecting to funds page...', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
       // After successful sign-up, redirect to /funds
       if (response.data.token) {
-        localStorage.setItem('authToken',response.data.token)
-        navigate('/funds'); 
+        localStorage.setItem('authToken', response.data.token);
+        // Short delay before redirect to allow user to see the toast
+        setTimeout(() => {
+          navigate('/funds');
+        }, 2000);
       }
 
     } catch (error) {
       console.error('Error signing up:', error);
+      toast.error(error.response?.data?.message || 'Failed to sign up. Please try again.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
   return (
     <>
+   
       <div className='flex h-screen bg-slate-300 justify-center'>
         <div className='flex flex-col justify-center'>
           <div className='rounded-lg bg-white w-80 text-center p-2 h-max px-4'>
@@ -85,6 +107,7 @@ localStorage.setItem('email',formdata.username)
           </div>
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 };

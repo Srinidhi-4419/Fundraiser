@@ -136,53 +136,60 @@ router.post('/getinfo', async (req, res) => {
         return res.status(400).json({ message: "Username and fundraiserId are required" });
       }
       
-      // Get user information first
-      try {
-        // Using axios to make an internal request to our user info endpoint
-        const userResponse = await axios.post(
-          'http://localhost:3000/api/user/getinfo', 
-          { username }
-        );
-        
-        const { firstname, lastname } = userResponse.data;
-        
-        // Format donor name (e.g., "John Doe")
-        const donorName = `${firstname} ${lastname}`;
-        
-        // Add donor to fundraiser
-        const fundraiser = await Fundraiser.findByIdAndUpdate(
-          fundraiserId,
-          { $push: { donors: donorName } },
-          { new: true }
-        );
-        
-        if (!fundraiser) {
-          return res.status(404).json({ message: "Fundraiser not found" });
+      let donorName;
+      
+      // Check if donation is anonymous
+      if (username === "Anonymous") {
+        // Use "Anonymous" directly without fetching user info
+        donorName = "Anonymous";
+      } else {
+        // Get user information for non-anonymous donations
+        try {
+          // Using axios to make an internal request to our user info endpoint
+          const userResponse = await axios.post(
+            'http://localhost:3000/api/user/getinfo', 
+            { username }
+          );
+          
+          const { firstname, lastname } = userResponse.data;
+          
+          // Format donor name (e.g., "John Doe")
+          donorName = `${firstname} ${lastname}`;
+        } catch (axiosError) {
+          console.error("Error getting user info:", axiosError.message);
+          
+          if (axiosError.response && axiosError.response.status === 404) {
+            return res.status(404).json({ message: "User not found" });
+          }
+          
+          return res.status(502).json({ 
+            message: "Error retrieving user data", 
+            error: axiosError.message 
+          });
         }
-        
-        return res.json({
-          message: "Donor added successfully",
-          fundraiser
-        });
-        
-      } catch (axiosError) {
-        console.error("Error getting user info:", axiosError.message);
-        
-        if (axiosError.response && axiosError.response.status === 404) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        
-        return res.status(502).json({ 
-          message: "Error retrieving user data", 
-          error: axiosError.message 
-        });
       }
+      
+      // Add donor to fundraiser
+      const fundraiser = await Fundraiser.findByIdAndUpdate(
+        fundraiserId,
+        { $push: { donors: donorName } },
+        { new: true }
+      );
+      
+      if (!fundraiser) {
+        return res.status(404).json({ message: "Fundraiser not found" });
+      }
+      
+      return res.json({
+        message: "Donor added successfully",
+        fundraiser
+      });
       
     } catch (error) {
       console.error("Server error:", error);
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
-  });
+});
   router.get('/donations', authmiddleware, async (req, res) => {
     try {
         const donations = await Donation.find({ donor: req.userid })
@@ -242,8 +249,8 @@ router.post('/donate', authmiddleware, async (req, res) => {
       
       await donation.save();
       
-      // Update fundraiser remaining amount
-      fundraiser.remainingAmount = Math.max(0, fundraiser.remainingAmount - amount);
+      // REMOVE THIS PART - don't update the amount here
+      // fundraiser.remainingAmount = Math.max(0, fundraiser.remainingAmount - amount);
       
       // Add donation to fundraiser's donations array
       fundraiser.donations.push(donation._id);
@@ -259,5 +266,4 @@ router.post('/donate', authmiddleware, async (req, res) => {
       res.status(500).json({ error: err.message });
   }
 });
-
 module.exports = router;
