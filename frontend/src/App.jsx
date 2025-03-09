@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Main } from './components/Main';
-import { Signup } from './components/Signup';
+import  Signup  from './components/Signup';
 import Signin from './components/Signin';
 import { Funds } from './components/Funds';
 import { Create } from './components/Create';
@@ -32,7 +32,7 @@ function App() {
         <Route path='/search' element={<><Navbar/><Search/></>}/>
         <Route path='/userdashboard' element={<><Navbar/><UserDashboard/></>}/>
         <Route path='/fundraiser/update/:id' element={<><Navbar/><UpdateFundraisers/></>}/>
-        <Route path='/about' element={<><AboutPage/></>}/>
+        <Route path='/about' element={<><Navbar/><AboutPage/></>}/>
         <Route path='/explore' element={<><ExploreCauses/></>}/>
       </Routes>
     </BrowserRouter>

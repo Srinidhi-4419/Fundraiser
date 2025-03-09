@@ -23,7 +23,6 @@ export function Create() {
     upiId: "",
   });
   
-
   // Function to update formdata
   const handleUpdate = (newData) => {
     setFormData((prev) => ({ ...prev, ...newData }));
@@ -32,27 +31,6 @@ export function Create() {
   // Next and Previous handlers
   const handleNext = () => setCount((prev) => prev + 1);
   const handlePrev = () => setCount((prev) => prev - 1);
-
-  // Check if the required data for each step is present
-  const isNextButtonDisabled = () => {
-    switch (count) {
-      case 0:
-        return !formdata.category; // No category selected
-        
-      case 1:
-        return !formdata.type; // No type selected
-      case 2:
-        return formdata.targetAmount <= 0; // No target amount set
-      case 3:
-        return !formdata.image; // No image selected
-      case 4:
-        return !formdata.description; // No description entered
-      case 5:
-        return !formdata.title; // No title entered
-      default:
-        return false;
-    }
-  };
 
   return (
     <div className="flex h-screen">
@@ -123,68 +101,65 @@ export function Create() {
       )}
 
       {/* Right Section */}
-      <div className="w-3/5 bg-white rounded-lg p-4 relative">
+      <div className="w-3/5 bg-white rounded-lg p-4">
         {count === 0 && (
           <First
             onSelect={(category) => handleUpdate({ category })}
             selectedCategory={formdata.category}
+            handleNext={handleNext}
           />
         )}
         {count === 1 && (
           <Second
             onSelect={(type) => handleUpdate({ type })}
             selectedType={formdata.type}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
           />
         )}
         {count === 2 && (
           <Third
             onSelect={(targetAmount) => handleUpdate({ targetAmount })}
             selectedTargetAmount={formdata.targetAmount}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
           />
         )}
         {count === 3 && (
           <Fourth
             onSelect={(image) => handleUpdate({ image })}
             selectedImage={formdata.image}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
           />
         )}
         {count === 4 && (
           <Fifth
             onSelect={(description) => handleUpdate({ description })}
             selectedDescription={formdata.description}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
           />
         )}
         {count === 5 && (
-          <Six onSelect={(data) => handleUpdate(data)} />
+          <Six 
+            onSelect={(data) => handleUpdate(data)} 
+            handleNext={handleNext}
+            handlePrev={handlePrev}
+          />
         )}
         {count === 6 && (
-          <AccountDetailsForm onNext={(data) => handleUpdate(data)}/>
+          <AccountDetailsForm 
+            onNext={(data) => handleUpdate(data)}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
+          />
         )}
-        {count === 7 && <Seventh formdata={formdata} />} {/* Displays collected form data */}
-
-        {/* Back Button */}
-        {count > 0 && count <= 7 && (
-          <div
-            className="absolute bottom-5 left-5 w-12 h-12 flex items-center justify-center border border-black rounded-lg hover:bg-green-100 cursor-pointer"
-            onClick={handlePrev}
-          >
-            <img
-              src="https://www.pngarts.com/files/5/Black-Previous-Button-PNG-Transparent-Image.png"
-              className="h-5 w-5"
-              alt="Back"
-            />
-          </div>
-        )}
-
-        {/* Continue Button */}
-        {count < 7 && (
-          <button
-            className="absolute bottom-5 right-5 bg-black text-2xl font-normal text-white px-6 py-2 rounded-lg shadow-md"
-            onClick={handleNext} handlePrev={handlePrev}
-            disabled={isNextButtonDisabled()} // Disable if not all required fields are filled
-          >
-            Continue
-          </button>
+        {count === 7 && (
+          <Seventh 
+            formdata={formdata} 
+            handlePrev={handlePrev}
+          />
         )}
       </div>
     </div>

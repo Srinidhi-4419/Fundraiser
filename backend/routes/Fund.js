@@ -413,4 +413,188 @@ router.post('/upload-image', authmiddleware, upload.single('image'), async (req,
     });
   }
 });
+// routes/fundraiserRoutes.js
+
+// Add comment to fundraiser - with auth middleware
+// In your Fund.js file at around line 446
+router.post('/fundraisers/:id/comments', authmiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    const userId = req.userid;
+    
+    console.log('Received comment request for fundraiser:', id);
+    console.log('Comment text:', text);
+    console.log('User ID from auth:', userId);
+    
+    // Validate inputs
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+    
+    // Find the fundraiser
+    const fundraiser = await Fundraiser.findById(id);
+    if (!fundraiser) {
+      return res.status(404).json({ message: 'Fundraiser not found' });
+    }
+    
+    let userName = 'Anonymous';
+    
+    // Only try to get user info if we have a userId
+    if (userId) {
+      try {
+        const user = await User.findById(userId);
+        console.log('Found user:', user ? 'yes' : 'no');
+        
+        if (user) {
+          // Use firstName and lastName if available
+          if (user.firstname && user.lastname) {
+            userName = `${user.firstname} ${user.lastname}`;
+          } else if (user.firstname) {
+            userName = user.firstname;
+          } else if (user.username) {
+            // Safely handle username
+            userName = user.username.includes('@') ? user.username.split('@')[0] : user.username;
+          }
+        }
+      } catch (userError) {
+        console.error('Error fetching user:', userError);
+        // Continue with anonymous comment if user fetch fails
+      }
+    }
+    
+    // Create new comment
+    const newComment = {
+      text,
+      user: userId,
+      userName: userName,
+      createdAt: new Date()
+    };
+    
+    // Add comment to the fundraiser
+    fundraiser.comments.push(newComment);
+    await fundraiser.save();
+    
+    console.log('Comment added successfully');
+    
+    // Return the newly created comment
+    res.status(201).json(newComment);
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Server error adding comment' });
+  }
+});
+router.delete('/fundraisers/:fundraiserId/comments/:commentId', authmiddleware, async (req, res) => {
+  try {
+    const { fundraiserId, commentId } = req.params;
+    const userId = req.userid;
+    
+    console.log('Received comment deletion request');
+    console.log('Fundraiser ID:', fundraiserId);
+    console.log('Comment ID:', commentId);
+    console.log('User ID from auth:', userId);
+    
+    // Check if the user is authenticated
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    // Find the fundraiser
+    const fundraiser = await Fundraiser.findById(fundraiserId);
+    if (!fundraiser) {
+      return res.status(404).json({ message: 'Fundraiser not found' });
+    }
+    
+    // Find the comment in the fundraiser's comments array
+    const commentIndex = fundraiser.comments.findIndex(
+      comment => comment._id.toString() === commentId
+    );
+    
+    // Check if comment exists
+    if (commentIndex === -1) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+    
+    // Check if the user is the owner of the comment
+    if (fundraiser.comments[commentIndex].user.toString() !== userId) {
+      return res.status(403).json({ message: 'You can only delete your own comments' });
+    }
+    
+    // Remove the comment from the array
+    fundraiser.comments.splice(commentIndex, 1);
+    
+    // Save the updated fundraiser
+    await fundraiser.save();
+    
+    console.log('Comment deleted successfully');
+    
+    res.status(200).json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    res.status(500).json({ message: 'Server error deleting comment' });
+  }
+});
+router.post('/:fundraiserId/updates', authmiddleware, async (req, res) => {
+  try {
+    const { fundraiserId } = req.params;
+    const { title, content } = req.body;
+    
+    // Validate inputs
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
+    
+    const fundraiser = await Fundraiser.findById(fundraiserId);
+    
+    // Check if fundraiser exists
+    if (!fundraiser) {
+      return res.status(404).json({ error: 'Fundraiser not found' });
+    }
+    
+    // Check if the logged-in user is the creator of the fundraiser
+    if (fundraiser.createdBy.toString() !== req.userid) {
+      return res.status(403).json({ error: 'Not authorized to update this fundraiser' });
+    }
+    
+    // Create the update
+    const newUpdate = {
+      title,
+      content,
+      createdAt: new Date()
+    };
+    
+    // Add the update to the fundraiser
+    fundraiser.updates.unshift(newUpdate); // Add to the beginning of the array
+    await fundraiser.save();
+    
+    res.status(201).json({ 
+      message: 'Update posted successfully', 
+      update: newUpdate 
+    });
+    
+  } catch (error) {
+    console.error('Error posting update:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Route to get all updates for a fundraiser
+router.get('/:fundraiserId/updates', async (req, res) => {
+  try {
+    const { fundraiserId } = req.params;
+    const fundraiser = await Fundraiser.findById(fundraiserId);
+    
+    if (!fundraiser) {
+      return res.status(404).json({ error: 'Fundraiser not found' });
+    }
+    
+    console.log('Updates being sent from API:', JSON.stringify(fundraiser.updates, null, 2));
+    res.json({ updates: fundraiser.updates });
+    
+  } catch (error) {
+    console.error('Error fetching updates:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

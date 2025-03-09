@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function First({ onSelect, selectedCategory }) {
+export function First({ onSelect, selectedCategory, handleNext }) {
     const [localSelectedCategory, setLocalSelectedCategory] = useState(selectedCategory || "");
 
     useEffect(() => {
@@ -12,6 +12,9 @@ export function First({ onSelect, selectedCategory }) {
         setLocalSelectedCategory(category); // Update local state
         onSelect(category); // Pass the selected category to parent (Create)
     };
+
+    // Check if continue button should be disabled
+    const isContinueDisabled = !localSelectedCategory;
 
     const categories = [
         { name: "Medical", icon: "🏥" },
@@ -29,7 +32,7 @@ export function First({ onSelect, selectedCategory }) {
     ];
 
     return (
-        <div className="flex flex-col h-full justify-center px-8">
+        <div className="flex flex-col h-full justify-center px-8 relative">
             <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">What best describes your cause?</h2>
                 <p className="text-gray-600">Choose a category that will help donors understand your fundraising goal</p>
@@ -64,6 +67,15 @@ export function First({ onSelect, selectedCategory }) {
                     </p>
                 </div>
             )}
+            
+            {/* Continue Button */}
+            <button
+                className="absolute bottom-5 right-5 bg-black text-2xl font-normal text-white px-6 py-2 rounded-lg shadow-md"
+                onClick={handleNext}
+                disabled={isContinueDisabled}
+            >
+                Continue
+            </button>
         </div>
     );
 }

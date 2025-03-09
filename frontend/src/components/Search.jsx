@@ -55,9 +55,9 @@ export function Search() {
     return (
         <div className="bg-white min-h-screen">
             {/* Hero Section */}
-            <div className="py-16 text-center">
-                <div className="max-w-xl mx-auto px-6">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-6">
+            <div className="py-8 md:py-16 text-center">
+                <div className="max-w-xl mx-auto px-4 sm:px-6">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4 sm:mb-6">
                         Find Your <span className="text-green-600">Fundraiser</span>
                     </h1>
                     
@@ -68,11 +68,11 @@ export function Search() {
                             placeholder="Search fundraisers by title..." 
                             value={searchTerm}
                             onChange={handleSearch}
-                            className="w-full px-4 py-3 pr-10 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                         <svg 
                             xmlns="http://www.w3.org/2000/svg" 
-                            className="absolute top-3.5 right-3 h-5 w-5 text-gray-400" 
+                            className="absolute top-3 sm:top-3.5 right-3 h-5 w-5 text-gray-400" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -84,9 +84,9 @@ export function Search() {
             </div>
 
             {/* Fundraisers Grid */}
-            <div className="max-w-7xl mx-auto px-6 py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
                 {filteredFundraisers.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                         {filteredFundraisers.map((fundraiser) => (
                             <div 
                                 key={fundraiser._id}
@@ -103,8 +103,8 @@ export function Search() {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-10">
-                        <p className="text-gray-500 text-xl">
+                    <div className="text-center py-8 sm:py-10">
+                        <p className="text-gray-500 text-lg sm:text-xl">
                             {searchTerm 
                                 ? "No fundraisers found matching your search." 
                                 : "No fundraisers available at the moment."}

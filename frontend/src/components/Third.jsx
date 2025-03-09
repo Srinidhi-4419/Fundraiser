@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { IndianRupee, Info } from "lucide-react";
 
-export function Third({ onSelect, amount }) {
+export function Third({ onSelect, amount, handleNext, handlePrev }) {
     const [localAmount, setLocalAmount] = useState(amount || 0);
     const [isValid, setIsValid] = useState(true);
     const [isFocused, setIsFocused] = useState(false);
@@ -30,55 +30,86 @@ export function Third({ onSelect, amount }) {
         return number.toLocaleString('en-IN');
     };
 
+    // Check if continue button should be disabled
+    const isContinueDisabled = !localAmount || localAmount <= 0 || !isValid;
+
     return (
-        <div className="flex flex-col space-y-6 pt-36 max-w-md mx-auto w-full">
-            <div className="text-black font-semibold text-2xl">Enter your starting goal in rupees</div>
-            
-            <div className="space-y-2">
-                <div className={`
-                    relative bg-white rounded-lg shadow-sm transition-all
-                    ${isFocused ? 'ring-2 ring-blue-500 border-transparent' : 'border border-gray-300'}
-                    ${!isValid ? 'ring-2 ring-red-500 border-transparent' : ''}
-                `}>
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                        <IndianRupee className="h-5 w-5 text-gray-500" />
+        <div className="flex flex-col h-full">
+            <div className="flex-grow">
+                <div className="flex flex-col space-y-6 pt-24 max-w-md mx-auto w-full">
+                    <div className="text-black font-semibold text-2xl">Enter your starting goal in rupees</div>
+                    
+                    <div className="space-y-2">
+                        <div className={`
+                            relative bg-white rounded-lg shadow-sm transition-all
+                            ${isFocused ? 'ring-2 ring-blue-500 border-transparent' : 'border border-gray-300'}
+                            ${!isValid ? 'ring-2 ring-red-500 border-transparent' : ''}
+                        `}>
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                <IndianRupee className="h-5 w-5 text-gray-500" />
+                            </div>
+                            <input
+                                type="text"
+                                value={localAmount || ""} // Ensure a valid value (empty string as fallback)
+                                placeholder="0"
+                                className="w-full pl-12 pr-4 py-4 rounded-lg text-xl focus:outline-none bg-transparent"
+                                onChange={handle}
+                                onFocus={() => setIsFocused(true)}
+                                onBlur={() => setIsFocused(false)}
+                            />
+                        </div>
+                        
+                        {!isValid && (
+                            <p className="text-red-500 text-sm flex items-center">
+                                <Info className="h-4 w-4 mr-1" />
+                                Please enter numbers only
+                            </p>
+                        )}
                     </div>
-                    <input
-                        type="text"
-                        value={localAmount || ""} // Ensure a valid value (empty string as fallback)
-                        placeholder="0"
-                        className="w-full pl-12 pr-4 py-4 rounded-lg text-xl focus:outline-none bg-transparent"
-                        onChange={handle}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                    />
+                    
+                    <div className="grid gap-3 grid-cols-4">
+                        {[5000, 10000, 25000, 50000].map(suggestion => (
+                            <button
+                                key={suggestion}
+                                onClick={() => {
+                                    setLocalAmount(suggestion.toString());
+                                    onSelect(suggestion.toString());
+                                    setIsValid(true);
+                                }}
+                                className={`
+                                    py-2 rounded-full text-sm font-medium transition-all
+                                    ${localAmount == suggestion ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}
+                                `}
+                            >
+                                ₹{suggestion.toLocaleString('en-IN')}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                
-                {!isValid && (
-                    <p className="text-red-500 text-sm flex items-center">
-                        <Info className="h-4 w-4 mr-1" />
-                        Please enter numbers only
-                    </p>
-                )}
             </div>
-            
-            <div className="grid gap-3 grid-cols-4">
-                {[5000, 10000, 25000, 50000].map(suggestion => (
-                    <button
-                        key={suggestion}
-                        onClick={() => {
-                            setLocalAmount(suggestion.toString());
-                            onSelect(suggestion.toString());
-                            setIsValid(true);
-                        }}
-                        className={`
-                            py-2 rounded-full text-sm font-medium transition-all
-                            ${localAmount == suggestion ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}
-                        `}
-                    >
-                        ₹{suggestion.toLocaleString('en-IN')}
-                    </button>
-                ))}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center mt-auto py-6">
+                <button
+                    className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+                    onClick={handlePrev}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Previous
+                </button>
+                <button
+                    className={`px-6 py-3 rounded-lg text-lg font-medium shadow-md transition-all duration-200 ${
+                        isContinueDisabled 
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                            : "bg-black text-white hover:bg-gray-800"
+                    }`}
+                    onClick={handleNext}
+                    disabled={isContinueDisabled}
+                >
+                    Continue
+                </button>
             </div>
         </div>
     );

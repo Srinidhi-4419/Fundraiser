@@ -4,7 +4,6 @@ mongoose.connect("mongodb://localhost:27017/platform").then(()=>{
 }).catch((error)=>{
     console.log(error);
 })
-// const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
     username: {

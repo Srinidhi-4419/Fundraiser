@@ -25,19 +25,20 @@ export function CategoryPage() {
     }, [category]);
 
     return (
-        <div className="pl-44 mt-10">
-            <h1 className="text-[50px] font-semibold">{category} Fundraisers</h1>
-            <div className="flex space-x-6 mt-6">
+        <div className="lg:pl-44 px-4 sm:px-6 mt-10">
+            <h1 className="text-3xl sm:text-4xl lg:text-[50px] font-semibold">{category} Fundraisers</h1>
+            <div className="flex flex-wrap gap-4 sm:gap-6 mt-6">
                 {fundraisers.length > 0 ? (
                     fundraisers.map((fundraiser) => (
-                        <Thumbnail
-                            key={fundraiser._id}
-                            id={fundraiser._id} // Pass the id as a prop
-                            image={fundraiser.imageUrl}
-                            title={fundraiser.title}
-                            remaining={fundraiser.remainingAmount}
-                            goal={fundraiser.targetAmount}
-                        />
+                        <div key={fundraiser._id} className="w-full sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] lg:w-auto">
+                            <Thumbnail
+                                id={fundraiser._id}
+                                image={fundraiser.imageUrl}
+                                title={fundraiser.title}
+                                remaining={fundraiser.remainingAmount}
+                                goal={fundraiser.targetAmount}
+                            />
+                        </div>
                     ))
                 ) : (
                     <p className="text-gray-500">No fundraisers found for this category.</p>

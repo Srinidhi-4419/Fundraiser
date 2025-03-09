@@ -16,52 +16,65 @@ const signupbody = zod.object({
 });
 
 router.post('/signup', async (req, res) => {
-    const { success } = signupbody.safeParse(req.body);
-    if (!success) {
-        return res.status(411).json({ msg: "Incorrect inputs" });
-    }
+  const { success } = signupbody.safeParse(req.body);
+  if (!success) {
+      return res.status(411).json({ msg: "Incorrect inputs" });
+  }
 
-    const existingUser = await User.findOne({ username: req.body.username });
-    if (existingUser) {
-        return res.status(411).json({ msg: "Email already taken" });
-    }
+  const existingUser = await User.findOne({ username: req.body.username });
+  if (existingUser) {
+      return res.status(411).json({ msg: "Email already taken" });
+  }
 
-    const user = await User.create({
-        username: req.body.username,
-        password: req.body.password,
-        firstname: req.body.firstname,
-        lastname: req.body.lastname
-    });
+  const user = await User.create({
+      username: req.body.username,
+      password: req.body.password,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname
+  });
 
-    const token = jwt.sign({ userid: user._id }, JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ userid: user._id }, JWT_SECRET);
 
-    res.json({
-        msg: "User created successfully",
-        token: token
-    });
+  res.json({
+      msg: "User created successfully",
+      token: token,
+      user: {
+          _id: user._id,
+          username: user.username,
+          firstname: user.firstname,
+          lastname: user.lastname
+      }
+  });
 });
+
 const signinBody = zod.object({
-    username: zod.string().email(),
-    password: zod.string().min(6)
+  username: zod.string().email(),
+  password: zod.string().min(6)
 });
 
 router.post('/signin', async (req, res) => {
-    const { success } = signinBody.safeParse(req.body);
-    if (!success) {
-        return res.status(400).json({ msg: "Invalid email or password format" });
-    }
+  const { success } = signinBody.safeParse(req.body);
+  if (!success) {
+      return res.status(400).json({ msg: "Invalid email or password format" });
+  }
 
-    const user = await User.findOne({ username: req.body.username });
-    if (!user || user.password !== req.body.password) {
-        return res.status(401).json({ msg: "Invalid credentials" });
-    }
+  const user = await User.findOne({ username: req.body.username });
+  if (!user || user.password !== req.body.password) {
+      return res.status(401).json({ msg: "Invalid credentials" });
+  }
 
-    const token = jwt.sign({ userid: user._id }, JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ userid: user._id }, JWT_SECRET);
 
-    res.json({
-        msg: "Signin successful",
-        token: token
-    });
+  res.json({
+      msg: "Signin successful",
+      token: token,
+      user: {
+          _id: user._id,
+          username: user.username,
+          firstname: user.firstname,
+          lastname: user.lastname
+      }
+  });
 });
 const updatedbody = zod.object({
     firstname: zod.string().optional(),

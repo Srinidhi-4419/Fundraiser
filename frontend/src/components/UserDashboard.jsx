@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Heart, PiggyBank, Gift, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Simplified Card component
 const Card = ({ children, className }) => (
@@ -37,14 +38,101 @@ const Progress = ({ value }) => (
   </div>
 );
 
+// Update Modal Component
+const UpdateModal = ({ isOpen, onClose, fundraiserId, onUpdateAdded }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(`http://localhost:3000/api/fund/${fundraiserId}/updates`, 
+        { title, content },
+        { 
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        }
+      );
+      
+      setTitle('');
+      setContent('');
+      if (onUpdateAdded) onUpdateAdded(response.data.update);
+      onClose();
+    } catch (error) {
+      console.error('Error posting update:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">Post Fundraiser Update</h2>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block mb-1 font-medium">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2 border rounded"
+              required
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block mb-1 font-medium">Content</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full p-2 border rounded h-32"
+              required
+            />
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              {loading ? 'Posting...' : 'Post Update'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const UserDashboard = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardData, setDashboardData] = useState(null);
   const [donations, setDonations] = useState([]);
   const [fundraisers, setFundraisers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Add state for update modal
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [selectedFundraiser, setSelectedFundraiser] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -101,6 +189,16 @@ const UserDashboard = () => {
       currency: 'INR',
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  const handleOpenUpdateModal = (fundraiser) => {
+    setSelectedFundraiser(fundraiser);
+    setUpdateModalOpen(true);
+  };
+
+  const handleUpdateAdded = (newUpdate) => {
+    // Optionally refresh fundraisers or add the update to the state
+    console.log("Update added:", newUpdate);
   };
 
   if (loading) {
@@ -294,15 +392,18 @@ const UserDashboard = () => {
                   </div>
                   
                   <div className="mt-4 flex justify-between">
-                  <button 
-  onClick={() => navigate(`/fundraiser/update/${fundraiser._id}`)}
-  className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
->
-  Update Details
-</button>
+                    <button 
+                      onClick={() => navigate(`/fundraiser/update/${fundraiser._id}`)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                    >
+                      Update Details
+                    </button>
                     {fundraiser.remainingAmount > 0 ? (
-                      <button className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm">
-                        Share
+                      <button 
+                        onClick={() => handleOpenUpdateModal(fundraiser)}
+                        className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
+                      >
+                        Post Update
                       </button>
                     ) : (
                       <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md text-sm">
@@ -388,6 +489,16 @@ const UserDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Update Modal */}
+      {selectedFundraiser && (
+        <UpdateModal 
+          isOpen={updateModalOpen}
+          onClose={() => setUpdateModalOpen(false)}
+          fundraiserId={selectedFundraiser._id}
+          onUpdateAdded={handleUpdateAdded}
+        />
+      )}
     </div>
   );
 };
