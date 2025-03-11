@@ -2,9 +2,10 @@ import { useState } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-export default function AccountDetailsForm({ handleNext, handlePrev }) {
+export default function AccountDetailsForm({onNext, handleNext, handlePrev }) {
   const [upiId, setUpiId] = useState("");
   const [error, setError] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   const validateUPI = (id) => {
     // Simple UPI validation - checks for username@provider format
@@ -12,7 +13,7 @@ export default function AccountDetailsForm({ handleNext, handlePrev }) {
     return upiRegex.test(id);
   };
 
-  const handleSubmit = () => {
+  const handleSave = () => {
     if (!upiId.trim()) {
       setError("Please enter your UPI ID");
       return;
@@ -41,12 +42,25 @@ export default function AccountDetailsForm({ handleNext, handlePrev }) {
     });
     
     setError("");
-    // Pass UPI ID to parent component and navigate to next page
-    handleNext({ upiId });
+    setIsSaved(true);
   };
 
-  // Check if continue button should be disabled
-  const isContinueDisabled = !upiId.trim() || !validateUPI(upiId);
+  const handleContinue = () => {
+    if (isSaved) {
+      onNext({ upiId });  // Use onNext to update the form data
+      handleNext();  
+      
+    } else {
+      toast.error('Please save your UPI ID first', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
 
   return (
     <>
@@ -79,6 +93,7 @@ export default function AccountDetailsForm({ handleNext, handlePrev }) {
                 onChange={(e) => {
                   setUpiId(e.target.value);
                   if (error) setError("");
+                  if (isSaved) setIsSaved(false); // Reset saved state if input changes
                 }}
                 className={`w-full border ${error ? 'border-red-500' : 'border-gray-300'} p-3 pl-10 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors`}
                 placeholder="username@ybl"
@@ -103,10 +118,27 @@ export default function AccountDetailsForm({ handleNext, handlePrev }) {
               Make sure your UPI ID is active and linked to your bank account.
             </p>
           </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSave}
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all hover:translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 mb-4"
+          >
+            Save
+          </button>
+          
+          {isSaved && (
+            <div className="flex items-center justify-center bg-green-100 p-2 rounded-lg mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm text-green-700">UPI ID saved successfully</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Navigation Buttons - Styled similar to Fifth component */}
+      {/* Navigation Buttons */}
       <div className="flex justify-between items-center mt-auto py-6 max-w-md mx-auto w-full">
         <button
           className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200 shadow-sm"
@@ -120,12 +152,12 @@ export default function AccountDetailsForm({ handleNext, handlePrev }) {
         
         <button
           className={`px-6 py-3 rounded-lg text-lg font-medium shadow-md transition-all duration-200 ${
-            isContinueDisabled 
+            !isSaved 
               ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
               : "bg-black text-white hover:bg-gray-800"
           }`}
-          onClick={handleSubmit}
-          disabled={isContinueDisabled}
+          onClick={handleContinue}
+          disabled={!isSaved}
         >
           Continue
         </button>
