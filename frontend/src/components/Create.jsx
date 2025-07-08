@@ -124,7 +124,7 @@ export function Create() {
             handleNext={handleNext}
             handlePrev={handlePrev}
           />
-        )}
+        )} 
         {count === 3 && (
           <Fourth
             onSelect={(image) => handleUpdate({ image })}

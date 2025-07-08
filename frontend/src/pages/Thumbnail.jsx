@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Users, Clock } from "lucide-react";
 
 export function Thumbnail({ id, image, title, remaining, goal, deadline, supporters = 0 }) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [donorsCount, setDonorsCount] = useState(supporters);
+  const [isLoading, setIsLoading] = useState(true);
   
   const raised = goal - remaining;
   const progress = (raised / goal) * 100;
@@ -15,6 +17,29 @@ export function Thumbnail({ id, image, title, remaining, goal, deadline, support
       maximumFractionDigits: 0 
     }).format(amount);
   };
+
+  // Fetch donors count when component mounts
+  useEffect(() => {
+    const fetchDonorsCount = async () => {
+      try {
+        const donorsCountResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/donors/count`);
+        if (donorsCountResponse.ok) {
+          const countData = await donorsCountResponse.json();
+          if (countData.success) {
+            setDonorsCount(countData.donorsCount);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching donors count:", error);
+        // Fallback to the supporters prop if API call fails
+        setDonorsCount(supporters);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDonorsCount();
+  }, [id, supporters]);
 
   return (
     <div 
@@ -53,7 +78,13 @@ export function Thumbnail({ id, image, title, remaining, goal, deadline, support
         <div className="flex items-center space-x-4 mt-2 mb-3 text-gray-500 text-sm">
           <div className="flex items-center">
             <Users size={16} className="mr-1" />
-            <span>{supporters} supporters</span>
+            <span>
+              {isLoading ? (
+                <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+              ) : (
+                `${donorsCount} donors`
+              )}
+            </span>
           </div>
           <div className="flex items-center">
             <Clock size={16} className="mr-1" />

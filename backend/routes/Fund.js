@@ -189,39 +189,7 @@ router.put('/fundraisers/:id', authmiddleware, async (req, res) => {
   }
 });
 
-// const express = require('express');
-const nodemailer = require('nodemailer');
-// const { authmiddleware } = require('./authmiddleware');
-// const router = express.Router();
 
-router.post('/send-email', async (req, res) => {
-    const { email, message, organizerEmail } = req.body;
-
-    // Create a transporter object using the default SMTP transport
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER, // Your email address
-            pass: process.env.EMAIL_PASS, // Your email password
-        },
-    });
-
-    // Set up email data
-    let mailOptions = {
-        from: email, // Sender address
-        to: organizerEmail, // List of receivers
-        subject: 'Message from Fundraising Platform', // Subject line
-        text: message, // Plain text body
-    };
-
-    // Send mail with defined transport object
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-        res.status(200).json({ message: 'Email sent successfully!' });
-    });
-});
 router.post('/fundraisers/:id/update-amount',async(req,res)=>{
     const { id } = req.params;
   const { amount } = req.body;
@@ -271,32 +239,7 @@ router.post('/fundraisers/:id/update-amount',async(req,res)=>{
     });
   }
 })
-// router.post('/add-donor/:id', async (req, res) => {
-//     try {
-//         const { id } = req.params; // Extract fundraiser ID from URL parameter
-//         const { firstname } = req.body; // Extract firstname from request body
 
-//         if (!firstname) {
-//             return res.status(400).json({ message: "Firstname is required" });
-//         }
-
-//         // Find the fundraiser by ID and push the firstname into the donors array
-//         const fundraiser = await Fundraiser.findByIdAndUpdate(
-//             id,
-//             { $push: { donors: firstname } }, // Add firstname to donors array
-//             { new: true } // Return the updated document
-//         );
-
-//         if (!fundraiser) {
-//             return res.status(404).json({ message: "Fundraiser not found" });
-//         }
-
-//         res.json({ message: "Donor added successfully", fundraiser });
-//     } catch (error) {
-//         res.status(500).json({ message: "Internal Server Error", error: error.message });
-//     }
-// });
-// module.exports = router;
 // Route to get all donors for a specific fundraiser by ID
 router.get('/fundraiser/:id/donors', async (req, res) => {
     try {

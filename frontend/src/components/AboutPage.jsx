@@ -3,6 +3,7 @@ import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FaHandHoldingHeart, FaChartLine, FaSearch, FaUserShield, FaMobileAlt, FaUsers } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 
 const AboutPage = () => {
   // Animations for sections coming into view
@@ -131,11 +132,7 @@ const AboutPage = () => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
-            <img 
-              src="/api/placeholder/800/400" 
-              alt="Fundraising platform illustration" 
-              className="rounded-lg shadow-2xl mx-auto w-full max-w-3xl"
-            />
+          
           </motion.div>
         </div>
       </motion.section>
@@ -313,13 +310,16 @@ const AboutPage = () => {
             </motion.button>
             
             <motion.button 
+            onClick={()=>{
+              navigate('http://localhost:5173/funds')
+            }}
               variants={{
                 hidden: { opacity: 0, y: 10 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
               }}
               className="bg-transparent border-2 border-white text-white font-bold py-2 sm:py-3 px-6 sm:px-8 rounded-full hover:bg-white hover:text-green-600 transition-colors duration-300"
             >
-              Explore Causes
+            Start Donating
             </motion.button>
           </motion.div>
         </div>

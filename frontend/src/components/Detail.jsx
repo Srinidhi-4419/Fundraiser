@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
-// import { Heart, Share2, Clock, Users, ArrowLeft, AlertCircle, X } from "lucide-react";
 import { Heart, Share2, Clock, Users, ArrowLeft, AlertCircle, X, Send, MessageSquare, Trophy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast, Toaster } from 'react-hot-toast'
 import axios from 'axios';
+
 const Detail = ({email}) => {
     const { id } = useParams();
     console.log(email);
@@ -17,36 +17,45 @@ const Detail = ({email}) => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [userName, setUserName] = useState('');
     const [processingPayment, setProcessingPayment] = useState(false);
-const [donors,setcount]=useState(0);
+    const [donors, setcount] = useState(0);
     // Predefined donation amounts
     const donationOptions = [100, 500, 1000, 5000];
     const [showMessageModal, setShowMessageModal] = useState(false);
     const [messageText, setMessageText] = useState('');
     const [donateAnonymously, setDonateAnonymously] = useState(false);
     const [commentText, setCommentText] = useState('');
-const [isSubmitting, setIsSubmitting] = useState(false);
-const currentUserId = localStorage.getItem("userId") ;
-const [updates, setUpdates] = useState([]);
-const formatDate = (dateString) => {
-    // Check if date is valid
-    if (!dateString) return "No date";
-    
-    // Try parsing the date
-    const date = new Date(dateString);
-    
-    // Check if date is valid after parsing
-    if (isNaN(date.getTime())) {
-      // Fallback for date that couldn't be parsed
-      return "Date unavailable";
-    }
-    
-    // Format the date
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const currentUserId = localStorage.getItem("userId");
+    const [updates, setUpdates] = useState([]);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    // Check authentication status
+    useEffect(() => {
+        const authToken = localStorage.getItem("authToken");
+        setIsAuthenticated(!!authToken);
+    }, []);
+
+    const formatDate = (dateString) => {
+        // Check if date is valid
+        if (!dateString) return "No date";
+        
+        // Try parsing the date
+        const date = new Date(dateString);
+        
+        // Check if date is valid after parsing
+        if (isNaN(date.getTime())) {
+          // Fallback for date that couldn't be parsed
+          return "Date unavailable";
+        }
+        
+        // Format the date
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+    };
+
     useEffect(() => {
         const fetchFundraiserDetails = async () => {
             setLoading(true);
@@ -101,6 +110,7 @@ const formatDate = (dateString) => {
     
         fetchFundraiserDetails();
     }, [id]);
+
     useEffect(() => {
         const fetchUpdates = async () => {
           if (activeTab === 'updates') {
@@ -125,7 +135,8 @@ const formatDate = (dateString) => {
         };
       
         fetchUpdates();
-      }, [id, activeTab]);
+    }, [id, activeTab]);
+
     // Format currency with commas
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', { 
@@ -148,101 +159,120 @@ const formatDate = (dateString) => {
         return `upi://pay?pa=${encodedUpiId}&pn=${encodedName}&am=${formattedAmount}&cu=INR&tn=${encodedDescription}`;
     }, []);
 
+    // Modified handleDonateClick to check for authentication
     const handleDonateClick = () => {
+        if (!isAuthenticated) {
+            toast.error("Please sign in to donate", {
+                duration: 5000,
+                position: 'top-right',
+            });
+            // Redirect to login page
+            navigate('/signin', { state: { from: `/fund/${id}` } });
+            return;
+        }
+
         if (donationAmount <= 0) {
-            alert("Please enter a valid donation amount");
+            toast.error("Please enter a valid donation amount");
             return;
         }
         setShowPaymentModal(true);
     };
     
-    // New function to handle payment completion
-   // Updated handlePaymentComplete function
-   const handlePaymentComplete = async () => {
-    setProcessingPayment(true);
-    try {
-        const token = localStorage.getItem("authToken");
+    // Updated handlePaymentComplete function
+    const handlePaymentComplete = async () => {
+        setProcessingPayment(true);
+        try {
+            const token = localStorage.getItem("authToken");
 
-        // We should only update the amount in ONE place
-        // Let's keep the /update-amount endpoint as the single source of truth
-        const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ amount: donationAmount })
-        });
+            // Check if user is still authenticated
+            if (!token) {
+                toast.error("Your session has expired. Please sign in again.");
+                setProcessingPayment(false);
+                setShowPaymentModal(false);
+                navigate('/login', { state: { from: `/fund/${id}` } });
+                return;
+            }
 
-        if (!paymentResponse.ok) {
-            toast.error("There was a problem processing your payment. Please try again.");
-            setProcessingPayment(false);
-            return;
-        }
+            // We should only update the amount in ONE place
+            // Let's keep the /update-amount endpoint as the single source of truth
+            const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ amount: donationAmount })
+            });
 
-        // Update the local fundraiser data after successful payment
-        const updatedFundraiser = await paymentResponse.json();
-        setFundraiser(updatedFundraiser);
+            if (!paymentResponse.ok) {
+                toast.error("There was a problem processing your payment. Please try again.");
+                setProcessingPayment(false);
+                return;
+            }
 
-        // Step 2: Get username from localStorage and update donors list
-        // This endpoint should NOT update the amount again
-        const username = localStorage.getItem('email');
-        
-        if (username) {
-            const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
+            // Update the local fundraiser data after successful payment
+            const updatedFundraiser = await paymentResponse.json();
+            setFundraiser(updatedFundraiser);
+
+            // Step 2: Get username from localStorage and update donors list
+            // This endpoint should NOT update the amount again
+            const username = localStorage.getItem('email');
+            
+            if (username) {
+                const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        username: donateAnonymously ? "Anonymous" : username, 
+                        fundraiserId: id 
+                    })
+                });
+
+                if (!donorResponse.ok) {
+                    console.error("Warning: Donation was processed but donor name could not be added");
+                }
+            }
+
+            // Step 3: Record the donation for tracking purposes
+            // This endpoint should also NOT update the fundraiser amount
+            const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    username: donateAnonymously ? "Anonymous" : username, 
-                    fundraiserId: id 
+                    fundraiserId: id,
+                    amount: donationAmount 
                 })
             });
 
-            if (!donorResponse.ok) {
-                console.error("Warning: Donation was processed but donor name could not be added");
+            if (!donationResponse.ok) {
+                console.error("Warning: Donation record could not be saved.");
             }
+
+            toast.success(`Thank you! Your donation of ₹${formatCurrency(donationAmount)} was successful.`, {
+                duration: 5000,
+                position: 'top-center',
+                icon: '🎉',
+            });
+
+            setShowPaymentModal(false);
+            
+            setTimeout(() => {
+                navigate('/funds');
+            }, 2000);
+
+        } catch (error) {
+            console.error("Error processing payment:", error);
+            toast.error("There was a problem connecting to the server. Please try again later.");
+        } finally {
+            setProcessingPayment(false);
         }
-
-        // Step 3: Record the donation for tracking purposes
-        // This endpoint should also NOT update the fundraiser amount
-        const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                fundraiserId: id,
-                amount: donationAmount 
-            })
-        });
-
-        if (!donationResponse.ok) {
-            console.error("Warning: Donation record could not be saved.");
-        }
-
-        toast.success(`Thank you! Your donation of ₹${formatCurrency(donationAmount)} was successful.`, {
-            duration: 5000,
-            position: 'top-center',
-            icon: '🎉',
-        });
-
-        setShowPaymentModal(false);
-        
-        setTimeout(() => {
-            navigate('/funds');
-        }, 2000);
-
-    } catch (error) {
-        console.error("Error processing payment:", error);
-        toast.error("There was a problem connecting to the server. Please try again later.");
-    } finally {
-        setProcessingPayment(false);
-    }
-};
+    };
     
     if (loading) {
         return (
@@ -297,6 +327,7 @@ const formatDate = (dateString) => {
       <path d="M285.8 245.8c24.8 55.1 67.5 149.3 95 209.3l50 109.2.6-6.9c1.9-23.4-3.7-56.5-13.7-80.9-10.5-25.7-21.7-43.9-38.7-63-9.5-10.7-27.2-26.5-35.6-31.7-1.3-.9-2.4-1.9-2.4-2.3 0-.3 5.6-13.1 12.5-28.3 6.9-15.2 12.5-27.9 12.5-28.2 0-.4-42.2-.7-93.7-.7h-93.7l.6 2.7c.8 3.8 2.4 9 7.6 25.5 2.6 8.3 4.7 15.4 4.7 15.8 0 .4-4.5.7-10 .8-5.5 0-10 .1-10 .2s36 80.1 80 177.8c44 97.7 80 177.9 80 178.1 0 .3-17.9.5-39.7.5H152v2.1c0 1.7.6 2.2 2.8 2.5 1.5.2 56.7.3 122.7.3l120-.1 58.7-130.7c32.3-71.9 68.9-153.5 81.2-181.4 12.3-27.9 22.7-51.7 23.1-53l.7-2.3H387.8l-.3 3.9c-.3 3.6-.5 3.9-3.8 4.5-1.9.3-3.8.9-4.2 1.4-.4.4-.5.2-.1-.5.5-.9.3-1.2-.8-1-.8.2-1.3.9-1.1 1.4.2.6-.3 1-1 1s-1.2-.7-1-1.5c.2-.8.1-1.2-.3-.8-.5.4-1.3-.3-2-1.5-.6-1.1-1.7-2.3-2.5-2.7-.8-.4-1.9-1.6-2.5-2.6-1.1-2.1-1.6-1.7 20.9-19.5l11.6-9.1-50.9-.1-50.9-.1-12.2 27.2z" fill="#fbbc04"/>
     </svg>
     `;
+
     const handleDeleteComment = async (commentId) => {
         if (!commentId) {
           toast.error("Unable to identify comment.");
@@ -333,9 +364,19 @@ const formatDate = (dateString) => {
           console.error("Error deleting comment:", error);
           toast.error(error.message || "Error deleting comment. Please try again.");
         }
-      };
+    };
+
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!isAuthenticated) {
+            toast.error("Please sign in to post a comment", {
+                duration: 3000,
+                position: 'top-center',
+            });
+            navigate('/login', { state: { from: `/fund/${id}` } });
+            return;
+        }
         
         if (!commentText.trim()) {
           toast.error('Please enter a comment');
@@ -393,9 +434,18 @@ const formatDate = (dateString) => {
         } finally {
           setIsSubmitting(false);
         }
-      };
+    };
      
     const handleSendMessage = async () => {
+        if (!isAuthenticated) {
+            toast.error("Please sign in to send messages", {
+                duration: 3000,
+                position: 'top-center',
+            });
+            navigate('/login', { state: { from: `/fund/${id}` } });
+            return;
+        }
+
         if (!messageText.trim()) {
             toast.error("Message cannot be empty");
             return;
@@ -406,6 +456,7 @@ const formatDate = (dateString) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 },
                 body: JSON.stringify({
                     fundraiserEmail: fundraiser.email,
@@ -427,6 +478,7 @@ const formatDate = (dateString) => {
             toast.error("Failed to send message. Please try again.");
         }
     };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Payment Modal */}
@@ -507,48 +559,6 @@ const formatDate = (dateString) => {
                                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
                                     onClick={() => setShowPaymentModal(false)}
                                     disabled={processingPayment}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-    
-            {/* Message Modal */}
-            {showMessageModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Send a Message</h3>
-                            <button 
-                                onClick={() => setShowMessageModal(false)}
-                                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        
-                        <div>
-                            <textarea 
-                                className="w-full h-32 sm:h-40 p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none"
-                                placeholder="Write your message to the fundraiser..."
-                                value={messageText}
-                                onChange={(e) => setMessageText(e.target.value)}
-                            />
-                            
-                            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4">
-                                <button 
-                                    className="py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
-                                    onClick={handleSendMessage}
-                                >
-                                    <Send size={18} className="mr-2" />
-                                    Send Message
-                                </button>
-                                <button 
-                                    className="py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
-                                    onClick={() => setShowMessageModal(false)}
                                 >
                                     Cancel
                                 </button>

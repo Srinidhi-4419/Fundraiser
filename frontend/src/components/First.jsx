@@ -27,7 +27,7 @@ export function First({ onSelect, selectedCategory, handleNext }) {
         { name: "Technology", icon: "💻" },
         { name: "Arts & Culture", icon: "🎭" },
         { name: "Business", icon: "💼" },
-        { name: "Personal", icon: "👤" },
+        { name: "Competition", icon: "👤" },
         { name: "Other", icon: "✨" }
     ];
 
