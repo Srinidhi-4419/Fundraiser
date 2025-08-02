@@ -22,7 +22,7 @@ export function Thumbnail({ id, image, title, remaining, goal, deadline, support
   useEffect(() => {
     const fetchDonorsCount = async () => {
       try {
-        const donorsCountResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/donors/count`);
+        const donorsCountResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fund/fundraisers/${id}/donors/count`);
         if (donorsCountResponse.ok) {
           const countData = await donorsCountResponse.json();
           if (countData.success) {
