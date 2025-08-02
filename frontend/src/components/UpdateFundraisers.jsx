@@ -167,7 +167,7 @@ export function UpdateFundraisers() {
             };
 
             const token = localStorage.getItem("authToken");
-            const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fund/fundraisers/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
