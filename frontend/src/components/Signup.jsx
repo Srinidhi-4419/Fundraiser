@@ -45,7 +45,8 @@ const Signup = () => {
     
     setLoading(true);
     localStorage.setItem('email', formdata.username);
-  
+  console.log('Signup URL:', `${import.meta.env.VITE_BACKEND_URL}/api/user/signup`);
+
 
     try {
       const response = await axios.post(
