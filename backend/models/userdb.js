@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
-mongoose.connect("mongodb://localhost:27017/platform").then(()=>{
-    console.log('Mongodb connected');
-}).catch((error)=>{
-    console.log(error);
-})
+
 
 const userSchema = new mongoose.Schema({
     username: {
