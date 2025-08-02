@@ -18,7 +18,7 @@ export function Funds() {
             try {
                 const fetchedData = {};
                 for (const category of categories) {
-                    const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/category/${category}`);
+                    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fund/fundraisers/category/${category}`);
                     if (response.ok) {
                         const data = await response.json();
                         fetchedData[category] = data.slice(0, 3); // Get only 3 fundraisers
