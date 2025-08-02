@@ -5,23 +5,17 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast, Toaster } from 'react-hot-toast'
 import axios from 'axios';
 
-const Detail = ({email}) => {
+const Detail = ({ email }) => {
     const { id } = useParams();
-    console.log(email);
-    console.log(id);
     const navigate = useNavigate();
     const [fundraiser, setFundraiser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [donationAmount, setDonationAmount] = useState(500);
     const [activeTab, setActiveTab] = useState('story');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [userName, setUserName] = useState('');
     const [processingPayment, setProcessingPayment] = useState(false);
     const [donors, setcount] = useState(0);
-    // Predefined donation amounts
     const donationOptions = [100, 500, 1000, 5000];
-    const [showMessageModal, setShowMessageModal] = useState(false);
-    const [messageText, setMessageText] = useState('');
     const [donateAnonymously, setDonateAnonymously] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,21 +32,21 @@ const Detail = ({email}) => {
     const formatDate = (dateString) => {
         // Check if date is valid
         if (!dateString) return "No date";
-        
+
         // Try parsing the date
         const date = new Date(dateString);
-        
+
         // Check if date is valid after parsing
         if (isNaN(date.getTime())) {
-          // Fallback for date that couldn't be parsed
-          return "Date unavailable";
+            // Fallback for date that couldn't be parsed
+            return "Date unavailable";
         }
-        
+
         // Format the date
         return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     };
 
@@ -67,16 +61,16 @@ const Detail = ({email}) => {
                     setLoading(false);
                     return;
                 }
-                
+
                 const data = await response.json();
                 setFundraiser(data);
-                
+
                 // Then fetch the donors for this fundraiser
                 try {
                     const donorsResponse = await fetch(`http://localhost:3000/api/fundraiser/${id}/donors`);
                     if (donorsResponse.ok) {
                         const donorsData = await donorsResponse.json();
-                        
+
                         // Update the fundraiser state with donors information
                         setFundraiser(prevState => ({
                             ...prevState,
@@ -107,40 +101,35 @@ const Detail = ({email}) => {
                 setLoading(false);
             }
         };
-    
+
         fetchFundraiserDetails();
     }, [id]);
 
     useEffect(() => {
         const fetchUpdates = async () => {
-          if (activeTab === 'updates') {
-            try {
-              console.log('Fetching updates...');
-              const response = await axios.get(`http://localhost:3000/api/fund/${id}/updates`);
-              console.log('Raw response:', response.data);
-              
-              // Debug the response
-              if (response.data.updates) {
-                console.log('Updates found:', response.data.updates.length);
-                console.log('First update:', response.data.updates[0]);
-                setUpdates(response.data.updates);
-              } else {
-                console.log('No updates found in response');
-                setUpdates([]);
-              }
-            } catch (error) {
-              console.error('Error fetching updates:', error);
+            if (activeTab === 'updates') {
+                try {
+                    const response = await axios.get(`http://localhost:3000/api/fund/${id}/updates`);
+
+                    // Debug the response
+                    if (response.data.updates) {
+                        setUpdates(response.data.updates);
+                    } else {
+                        setUpdates([]);
+                    }
+                } catch (error) {
+                    console.error('Error fetching updates:', error);
+                }
             }
-          }
         };
-      
+
         fetchUpdates();
     }, [id, activeTab]);
 
     // Format currency with commas
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-IN', { 
-            maximumFractionDigits: 0 
+        return new Intl.NumberFormat('en-IN', {
+            maximumFractionDigits: 0
         }).format(amount);
     };
 
@@ -149,12 +138,12 @@ const Detail = ({email}) => {
         // Fixed format for Google Pay UPI deep links
         // Make sure the amount is a number with exactly 2 decimal places
         const formattedAmount = parseFloat(amount).toFixed(2);
-        
+
         // Proper URL encoding for all parameters
         const encodedUpiId = encodeURIComponent(upiId);
         const encodedName = encodeURIComponent(name);
         const encodedDescription = encodeURIComponent(description || 'fundraiser');
-        
+
         // Use the correct UPI intent format
         return `upi://pay?pa=${encodedUpiId}&pn=${encodedName}&am=${formattedAmount}&cu=INR&tn=${encodedDescription}`;
     }, []);
@@ -177,103 +166,163 @@ const Detail = ({email}) => {
         }
         setShowPaymentModal(true);
     };
-    
+
     // Updated handlePaymentComplete function
-    const handlePaymentComplete = async () => {
-        setProcessingPayment(true);
-        try {
-            const token = localStorage.getItem("authToken");
+    // Replace your existing handlePaymentComplete function with this improved version
 
-            // Check if user is still authenticated
-            if (!token) {
-                toast.error("Your session has expired. Please sign in again.");
-                setProcessingPayment(false);
-                setShowPaymentModal(false);
-                navigate('/login', { state: { from: `/fund/${id}` } });
-                return;
-            }
+const handlePaymentComplete = async () => {
+    setProcessingPayment(true);
+    
+    try {
+        const token = localStorage.getItem("authToken");
 
-            // We should only update the amount in ONE place
-            // Let's keep the /update-amount endpoint as the single source of truth
-            const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
+        // Check if user is still authenticated
+        if (!token) {
+            toast.error("Your session has expired. Please sign in again.");
+            setProcessingPayment(false);
+            setShowPaymentModal(false);
+            navigate('/signin', { state: { from: `/fund/${id}` } });
+            return;
+        }
+
+        // Step 1: Update the fundraiser amount
+        const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ amount: donationAmount })
+        });
+
+        if (!paymentResponse.ok) {
+            const errorData = await paymentResponse.json();
+            console.error("Payment update failed:", errorData);
+            toast.error("There was a problem processing your payment. Please try again.");
+            setProcessingPayment(false);
+            return;
+        }
+
+        const updatedFundraiserData = await paymentResponse.json();
+
+        // Immediately update the local state to prevent NaN values
+        setFundraiser(prevState => ({
+            ...prevState,
+            remainingAmount: updatedFundraiserData.remainingAmount || (prevState.remainingAmount - donationAmount),
+            targetAmount: updatedFundraiserData.targetAmount || prevState.targetAmount,
+            // Ensure we have valid numbers
+            ...(updatedFundraiserData.remainingAmount !== undefined && {
+                remainingAmount: Number(updatedFundraiserData.remainingAmount)
+            }),
+            ...(updatedFundraiserData.targetAmount !== undefined && {
+                targetAmount: Number(updatedFundraiserData.targetAmount)
+            })
+        }));
+
+        // Step 2: Add donor to the list
+        const username = localStorage.getItem('email');
+       
+
+        if (username) {
+            const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ amount: donationAmount })
-            });
-
-            if (!paymentResponse.ok) {
-                toast.error("There was a problem processing your payment. Please try again.");
-                setProcessingPayment(false);
-                return;
-            }
-
-            // Update the local fundraiser data after successful payment
-            const updatedFundraiser = await paymentResponse.json();
-            setFundraiser(updatedFundraiser);
-
-            // Step 2: Get username from localStorage and update donors list
-            // This endpoint should NOT update the amount again
-            const username = localStorage.getItem('email');
-            
-            if (username) {
-                const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ 
-                        username: donateAnonymously ? "Anonymous" : username, 
-                        fundraiserId: id 
-                    })
-                });
-
-                if (!donorResponse.ok) {
-                    console.error("Warning: Donation was processed but donor name could not be added");
-                }
-            }
-
-            // Step 3: Record the donation for tracking purposes
-            // This endpoint should also NOT update the fundraiser amount
-            const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    fundraiserId: id,
-                    amount: donationAmount 
+                body: JSON.stringify({
+                    username: donateAnonymously ? "Anonymous" : username,
+                    fundraiserId: id
                 })
             });
 
-            if (!donationResponse.ok) {
-                console.error("Warning: Donation record could not be saved.");
-            }
+            if (donorResponse.ok) {
 
-            toast.success(`Thank you! Your donation of ₹${formatCurrency(donationAmount)} was successful.`, {
+                // Update donors count and list
+                setcount(prevCount => prevCount + 1);
+                setFundraiser(prevState => ({
+                    ...prevState,
+                    donors: [...(prevState.donors || []), donateAnonymously ? "Anonymous" : username],
+                    donorsCount: (prevState.donorsCount || 0) + 1
+                }));
+            } else {
+                console.error("Failed to add donor");
+            }
+        }
+
+        // Step 3: Record the donation
+        const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                fundraiserId: id,
+                amount: donationAmount
+            })
+        });
+
+        if (!donationResponse.ok) {
+            console.error("Warning: Donation record could not be saved.");
+        }
+
+        // Close modal first
+        setShowPaymentModal(false);
+        setProcessingPayment(false);
+
+        // Show immediate success message
+        toast.success(`🎉 Payment Successful!`, {
+            duration: 4000,
+            position: 'top-center',
+            style: {
+                background: '#10B981',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                padding: '16px',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+            }
+        });
+
+        // Show detailed success message after a short delay
+        setTimeout(() => {
+            toast.success(`Thank you for your generous donation of ₹${formatCurrency(donationAmount)}! Your support means everything.`, {
                 duration: 5000,
                 position: 'top-center',
-                icon: '🎉',
+                icon: '❤️',
+                style: {
+                    background: '#059669',
+                    color: 'white',
+                    fontSize: '14px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    maxWidth: '400px'
+                }
             });
+        }, 1000);
 
-            setShowPaymentModal(false);
-            
-            setTimeout(() => {
-                navigate('/funds');
-            }, 2000);
+        // Navigate after showing success messages
+        setTimeout(() => {
+            navigate('/funds');
+        }, 4000);
 
-        } catch (error) {
-            console.error("Error processing payment:", error);
-            toast.error("There was a problem connecting to the server. Please try again later.");
-        } finally {
-            setProcessingPayment(false);
-        }
-    };
-    
+    } catch (error) {
+        console.error("Error processing payment:", error);
+        toast.error("There was a problem connecting to the server. Please try again later.", {
+            duration: 5000,
+            position: 'top-center',
+            style: {
+                background: '#EF4444',
+                color: 'white',
+                fontWeight: 'bold'
+            }
+        });
+        setProcessingPayment(false);
+    }
+};
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -292,7 +341,7 @@ const Detail = ({email}) => {
                     <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Fundraiser Not Found</h2>
                     <p className="text-gray-600 mb-6">We couldn't find the fundraiser you're looking for.</p>
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         className="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
                     >
@@ -306,69 +355,61 @@ const Detail = ({email}) => {
     const raised = fundraiser.targetAmount - fundraiser.remainingAmount;
     const progress = (raised / fundraiser.targetAmount) * 100;
     const circumference = 2 * Math.PI * 28; // 28 is the radius of the circle
-    
+
     // Assuming UPI ID is stored in fundraiser.upiId, if not, provide a default
     const upiId = fundraiser.upiId || "example@upi";
-    
+
     // Generate UPI payment string for the current donation
     const upiPaymentString = generateUpiPaymentString(
-        upiId, 
-        donationAmount, 
-        fundraiser.name, 
+        upiId,
+        donationAmount,
+        fundraiser.name,
         fundraiser.title
     );
 
-    // Google Pay logo SVG code
-    const googlePayLogo = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512">
-      <path d="M156.5 63.1l-4.3 9.6C95.1 178.9 73.2 222.5 73.2 278c0 55.1 22.1 99.3 79.4 205l4.1 9.6 152.3-.2 152.3-.3 7.3-7.7c22.8-24.3 40.3-59.6 46.7-94.5 2.6-14.3 2.6-53.5-.1-69-6.5-38-25.5-71.1-54.1-94.5-3.7-3-6.9-5.7-7.1-5.9-.3-.2 7.1-17.4 16.3-38.2 9.2-20.7 16.8-38.5 16.9-39.5.1-.9.7-2.2 1.3-2.7 1.5-1.2-6.9-1.3-165.5-1.3l-167 .1zm306.5 107.3c1 2.2 1 2.2-61.6 140.9l-62.6 138.7-96.4-.2c-53-.1-96.4-.2-96.4-.2 0-.1 44.3-98.9 98.4-219.7l98.4-219.5 59.6.1 59.6.1 1 2.2z" fill="#5f6368"/>
-      <path d="M233.1 96.7c-41 91.5-52.9 118.4-52.9 119.7 0 .8 10.4 24.5 23 52.6l23 51.1 29.9-66.8c16.4-36.7 30-67.1 30.1-67.5.2-.5-10.1-24.8-22.9-54.1-12.7-29.3-23.2-53.6-23.2-54 0-1.1 28.8-1.4 52.7-.6l12.2.4 23.3 51.8c12.7 28.5 23.5 51.9 23.8 52 .3 0 10.9-23.1 23.5-51.5 12.7-28.3 23.3-51.9 23.8-52.5.4-.5 15.1-1 32.6-1s31.7-.3 31.5-.6c-.3-.3-43.8-1-96.8-1.6l-96.3-1-35.3 79.6z" fill="#4285f4"/>
-      <path d="M152.3 138.7c-45.9 102.7-83.4 186.9-83.4 187.1 0 .3 147.3.2 147.7-.1.4-.2-39.9-89.9-82.9-184.1-4.5-9.9-9.8-21.5-11.6-25.8-1.9-4.3-3.6-7.8-3.9-7.8-.3 0-16.8 13.9-36.6 30.9-19.9 17-36.5 31-37 31-.4 0-1.1-.7-1.5-1.6-.6-1.7 31.3-30.6 71.7-64.8 11.8-10 22.2-18.5 23.2-19 1.6-.8 1.6.2 1.6 5.6v6.6l13.7 30.5zm227.6 127.8c-.5 1.7-.9 3.4-.9 3.7 0 .4 16.3.7 36.3.7s36.3-.3 36.3-.7c0-.5-17.5-39.8-18.4-41.3-.1-.2-11.9-.3-26-.3l-25.8.1-1.5 3.2c-.8 1.8-1.3 2.9-1.3 2.5 0-.5-.4.4-1 1.9-.5 1.6-1 2.8-1 2.7.1-.1-.6 1.4-1.4 3.4-1.9 4.7-2.9 7.1-3.5 9.5-.5 1.9-.5 1.9-.7-.1-.1-1.1-.6-3.8-1.1-6-.5-2.2-1.3-5.5-1.6-7.4-.6-3.1-1-4.5-2.5-9.5-1-3.6-3.1-3.8-3.1-.4 0 1.5-.8 1.7-7.5 1.5l-7.5-.3 1.3 3.2c.7 1.8 1.3 3.6 1.3 4 .1.5.3 1.6.5 2.5.2.9.7 2.5 1 3.5.4 1.1.8 2.7.9 3.5.9 6.4 2.2 8.5 2.3 3.8.1-1.6.4-2.8.8-2.8.9 0 .5-1.9 3.3 17zm-184.4 42.3c0 .7 10 23.1 22.1 49.8 12.2 26.7 22.1 48.9 22.1 49.2 0 .4-21.3.6-47.4.6-45.8-.1-47.3-.1-46.9-2 .5-2.1 97.5-217.9 97.5-217.4 0 .2-10.6 24.1-23.7 53.1-13 29-23.7 54-23.7 55.5 0 1.5-.4 2.7-1 2.7-1.1 0-1.4 4.9-.3 5.1.4.1.7 2.3.7 4.8z" fill="#ea4335"/>
-      <path d="M285.8 245.8c24.8 55.1 67.5 149.3 95 209.3l50 109.2.6-6.9c1.9-23.4-3.7-56.5-13.7-80.9-10.5-25.7-21.7-43.9-38.7-63-9.5-10.7-27.2-26.5-35.6-31.7-1.3-.9-2.4-1.9-2.4-2.3 0-.3 5.6-13.1 12.5-28.3 6.9-15.2 12.5-27.9 12.5-28.2 0-.4-42.2-.7-93.7-.7h-93.7l.6 2.7c.8 3.8 2.4 9 7.6 25.5 2.6 8.3 4.7 15.4 4.7 15.8 0 .4-4.5.7-10 .8-5.5 0-10 .1-10 .2s36 80.1 80 177.8c44 97.7 80 177.9 80 178.1 0 .3-17.9.5-39.7.5H152v2.1c0 1.7.6 2.2 2.8 2.5 1.5.2 56.7.3 122.7.3l120-.1 58.7-130.7c32.3-71.9 68.9-153.5 81.2-181.4 12.3-27.9 22.7-51.7 23.1-53l.7-2.3H387.8l-.3 3.9c-.3 3.6-.5 3.9-3.8 4.5-1.9.3-3.8.9-4.2 1.4-.4.4-.5.2-.1-.5.5-.9.3-1.2-.8-1-.8.2-1.3.9-1.1 1.4.2.6-.3 1-1 1s-1.2-.7-1-1.5c.2-.8.1-1.2-.3-.8-.5.4-1.3-.3-2-1.5-.6-1.1-1.7-2.3-2.5-2.7-.8-.4-1.9-1.6-2.5-2.6-1.1-2.1-1.6-1.7 20.9-19.5l11.6-9.1-50.9-.1-50.9-.1-12.2 27.2z" fill="#fbbc04"/>
-    </svg>
-    `;
+    
 
     const handleDeleteComment = async (commentId) => {
         if (!commentId) {
-          toast.error("Unable to identify comment.");
-          return;
+            toast.error("Unable to identify comment.");
+            return;
         }
-        
+
         if (!window.confirm("Are you sure you want to delete this comment?")) {
-          return;
+            return;
         }
-        
+
         try {
-          const token = localStorage.getItem("authToken");
-          const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/comments/${commentId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to delete comment");
             }
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to delete comment");
-          }
-          
-          // Update the UI by removing the deleted comment
-          setFundraiser(prev => ({
-            ...prev,
-            comments: prev.comments.filter(comment => comment._id !== commentId)
-          }));
-          
-          toast.success("Comment deleted successfully");
-          
+
+            // Update the UI by removing the deleted comment
+            setFundraiser(prev => ({
+                ...prev,
+                comments: prev.comments.filter(comment => comment._id !== commentId)
+            }));
+
+            toast.success("Comment deleted successfully");
+
         } catch (error) {
-          console.error("Error deleting comment:", error);
-          toast.error(error.message || "Error deleting comment. Please try again.");
+            console.error("Error deleting comment:", error);
+            toast.error(error.message || "Error deleting comment. Please try again.");
         }
     };
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!isAuthenticated) {
             toast.error("Please sign in to post a comment", {
                 duration: 3000,
@@ -377,107 +418,64 @@ const Detail = ({email}) => {
             navigate('/login', { state: { from: `/fund/${id}` } });
             return;
         }
-        
+
         if (!commentText.trim()) {
-          toast.error('Please enter a comment');
-          return;
+            toast.error('Please enter a comment');
+            return;
         }
-        
+
         setIsSubmitting(true);
-        
+
         // Get authToken instead of token
         const token = localStorage.getItem('authToken');
-        
+
         // Debug log
-        console.log('Using authToken:', token ? 'exists' : 'missing');
-        
         try {
-          const response = await axios.post(
-            `http://localhost:3000/api/fund/fundraisers/${id}/comments`, 
-            { text: commentText },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              }
-            }
-          );
+            const response = await axios.post(
+                `http://localhost:3000/api/fund/fundraisers/${id}/comments`,
+                { text: commentText },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
           
-          console.log('Comment posted successfully:', response.data);
-          
-          // Update local state with the new comment
-          setFundraiser({
-            ...fundraiser,
-            comments: [...(fundraiser.comments || []), response.data]
-          });
-          
-          // Clear the comment input
-          setCommentText('');
-          toast.success('Comment posted successfully!');
+
+            // Update local state with the new comment
+            setFundraiser({
+                ...fundraiser,
+                comments: [...(fundraiser.comments || []), response.data]
+            });
+
+            // Clear the comment input
+            setCommentText('');
+            toast.success('Comment posted successfully!');
         } catch (error) {
-          console.error('Error posting comment:', error);
-          
-          if (error.response) {
-            console.log('Response status:', error.response.status);
-            console.log('Response data:', error.response.data);
-            
-            if (error.response.status === 403) {
-              toast.error('You are not authorized to post comments. Please log in again.');
-            } else if (error.response.status === 401) {
-              toast.error('Your session has expired. Please log in again.');
+            console.error('Error posting comment:', error);
+
+            if (error.response) {
+              
+               
+
+                if (error.response.status === 403) {
+                    toast.error('You are not authorized to post comments. Please log in again.');
+                } else if (error.response.status === 401) {
+                    toast.error('Your session has expired. Please log in again.');
+                } else {
+                    toast.error(`Failed to post comment: ${error.response?.data?.message || error.message}`);
+                }
             } else {
-              toast.error(`Failed to post comment: ${error.response?.data?.message || error.message}`);
+                toast.error(`Network error: ${error.message}`);
             }
-          } else {
-            toast.error(`Network error: ${error.message}`);
-          }
         } finally {
-          setIsSubmitting(false);
+            setIsSubmitting(false);
         }
     };
-     
-    const handleSendMessage = async () => {
-        if (!isAuthenticated) {
-            toast.error("Please sign in to send messages", {
-                duration: 3000,
-                position: 'top-center',
-            });
-            navigate('/login', { state: { from: `/fund/${id}` } });
-            return;
-        }
 
-        if (!messageText.trim()) {
-            toast.error("Message cannot be empty");
-            return;
-        }
 
-        try {
-            const response = await fetch('http://localhost:3000/api/fundraiser/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                },
-                body: JSON.stringify({
-                    fundraiserEmail: fundraiser.email,
-                    senderEmail: localStorage.getItem('email'),
-                    message: messageText
-                })
-            });
-
-            if (response.ok) {
-                toast.success("Message sent successfully!");
-                setShowMessageModal(false);
-                setMessageText('');
-            } else {
-                const errorData = await response.json();
-                toast.error(errorData.message || "Failed to send message");
-            }
-        } catch (error) {
-            console.error("Error sending message:", error);
-            toast.error("Failed to send message. Please try again.");
-        }
-    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -487,21 +485,21 @@ const Detail = ({email}) => {
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg sm:text-xl font-bold text-gray-800">Google Pay QR Code</h3>
-                            <button 
+                            <button
                                 onClick={() => setShowPaymentModal(false)}
                                 className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
                             >
                                 <X size={20} />
                             </button>
                         </div>
-                        
+
                         <div className="text-center">
                             <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
                                 <p className="text-sm text-gray-600 mb-2">Scan this QR code with Google Pay to donate</p>
                                 <div className="flex justify-center">
                                     {/* QR code component */}
                                     <div className="border border-gray-200 rounded-lg p-2 sm:p-4 bg-white">
-                                        <QRCodeSVG 
+                                        <QRCodeSVG
                                             value={upiPaymentString}
                                             size={200}
                                             level="H"
@@ -511,18 +509,18 @@ const Detail = ({email}) => {
                                 </div>
                                 <p className="text-xs sm:text-sm text-gray-500 mt-2">Open Google Pay app and tap 'Scan QR'</p>
                             </div>
-                            
+
                             <div className="mb-4">
                                 <p className="text-sm text-gray-600">Amount</p>
                                 <p className="text-xl sm:text-2xl font-bold text-emerald-600">₹{formatCurrency(donationAmount)}</p>
                             </div>
-                            
+
                             <div className="mb-6">
                                 <p className="text-sm text-gray-600">UPI ID</p>
                                 <p className="text-base sm:text-lg font-medium">{upiId}</p>
                                 <p className="text-xs text-gray-500 mt-1">Payment will be processed through Google Pay</p>
                             </div>
-                            
+
                             {/* Added Anonymous Donation Checkbox */}
                             <div className="flex items-center mb-4">
                                 <input
@@ -536,26 +534,30 @@ const Detail = ({email}) => {
                                     Donate anonymously
                                 </label>
                             </div>
-                            
+
                             <div className="flex flex-col space-y-3">
-                                <button 
-                                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex justify-center items-center"
+                                <button
+                                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handlePaymentComplete}
                                     disabled={processingPayment}
                                 >
                                     {processingPayment ? (
                                         <div className="flex items-center">
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            Processing...
+                                            <span>Processing Payment...</span>
                                         </div>
                                     ) : (
                                         <>
-                                            <span className="mr-2" dangerouslySetInnerHTML={{ __html: googlePayLogo }} />
+                                            <img
+                                                src="https://www.pngrepo.com/download/353822/google-pay-icon.png"
+                                                alt="Google Pay"
+                                                className="w-5 h-5 mr-2"
+                                            />
                                             I've Completed the Payment
                                         </>
                                     )}
                                 </button>
-                                <button 
+                                <button
                                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
                                     onClick={() => setShowPaymentModal(false)}
                                     disabled={processingPayment}
@@ -567,12 +569,12 @@ const Detail = ({email}) => {
                     </div>
                 </div>
             )}
-    
+
             {/* Top Navigation */}
             <div className="bg-white shadow-sm sticky top-0 z-10">
                 <div className="container mx-auto px-4 py-3 flex items-center">
-                    <button 
-                        onClick={() => navigate(-1)} 
+                    <button
+                        onClick={() => navigate(-1)}
                         className="flex items-center text-gray-600 hover:text-emerald-600 transition-colors"
                     >
                         <ArrowLeft size={18} className="mr-1" />
@@ -580,15 +582,15 @@ const Detail = ({email}) => {
                     </button>
                 </div>
             </div>
-    
+
             <div className="container mx-auto px-4 py-4 sm:py-8">
                 {/* Header Section */}
                 <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 sm:mb-8">
                     <div className="relative h-48 sm:h-64 md:h-80">
-                        <img 
-                            src={fundraiser.imageUrl} 
-                            alt={fundraiser.title} 
-                            className="w-full h-full object-cover" 
+                        <img
+                            src={fundraiser.imageUrl}
+                            alt={fundraiser.title}
+                            className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                         <div className="absolute bottom-0 left-0 p-4 sm:p-6 text-white">
@@ -602,46 +604,46 @@ const Detail = ({email}) => {
                         </div>
                     </div>
                 </div>
-    
+
                 <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
                     {/* Left Content Area */}
                     <div className="w-full lg:w-2/3 order-2 lg:order-1">
                         {/* Tabs Navigation */}
                         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 sm:mb-8">
                             <div className="flex overflow-x-auto scrollbar-hide">
-                                <button 
+                                <button
                                     className={`px-3 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm whitespace-nowrap focus:outline-none ${activeTab === 'story' ? 'text-emerald-600 border-b-2 border-emerald-500' : 'text-gray-500 hover:text-emerald-500'}`}
                                     onClick={() => setActiveTab('story')}
                                 >
                                     Story
                                 </button>
-                                <button 
+                                <button
                                     className={`px-3 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm whitespace-nowrap focus:outline-none ${activeTab === 'Comments' ? 'text-emerald-600 border-b-2 border-emerald-500' : 'text-gray-500 hover:text-emerald-500'}`}
                                     onClick={() => setActiveTab('Comments')}
                                 >
                                     Comments
                                 </button>
-                                <button 
+                                <button
                                     className={`px-3 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm whitespace-nowrap focus:outline-none ${activeTab === 'donors' ? 'text-emerald-600 border-b-2 border-emerald-500' : 'text-gray-500 hover:text-emerald-500'}`}
                                     onClick={() => setActiveTab('donors')}
                                 >
                                     Donors
                                 </button>
-                                <button 
+                                <button
                                     className={`px-3 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm whitespace-nowrap focus:outline-none ${activeTab === 'updates' ? 'text-emerald-600 border-b-2 border-emerald-500' : 'text-gray-500 hover:text-emerald-500'}`}
                                     onClick={() => setActiveTab('updates')}
                                 >
                                     Updates
                                 </button>
                             </div>
-    
+
                             <div className="p-4 sm:p-6">
                                 {activeTab === 'story' && (
                                     <div>
                                         <p className="text-base sm:text-lg leading-relaxed text-gray-700 whitespace-pre-line">
                                             {fundraiser.description}
                                         </p>
-                                        
+
                                         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-gray-50 rounded-lg border border-gray-200">
                                             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Organizers and Beneficiary</h3>
                                             <div className="flex items-center">
@@ -657,11 +659,11 @@ const Detail = ({email}) => {
                                         </div>
                                     </div>
                                 )}
-    
+
                                 {activeTab === 'Comments' && (
                                     <div className="space-y-4 sm:space-y-6">
                                         <h3 className="text-lg sm:text-xl font-semibold">Comments</h3>
-                                        
+
                                         {/* Comments list */}
                                         <div className="space-y-3 sm:space-y-4">
                                             {fundraiser.comments && fundraiser.comments.length > 0 ? (
@@ -675,7 +677,7 @@ const Detail = ({email}) => {
                                                                 <span className="text-xs sm:text-sm text-gray-500">
                                                                     {new Date(comment.createdAt).toLocaleDateString()}
                                                                 </span>
-                                                                
+
                                                                 {/* Delete button - only shown if the comment belongs to the current user */}
                                                                 {comment.user && comment.user.toString() === currentUserId && (
                                                                     <button
@@ -699,7 +701,7 @@ const Detail = ({email}) => {
                                                 </p>
                                             )}
                                         </div>
-                                        
+
                                         {/* Comment form - no username field */}
                                         <form onSubmit={handleCommentSubmit} className="space-y-3">
                                             <textarea
@@ -709,7 +711,7 @@ const Detail = ({email}) => {
                                                 placeholder="Leave a comment of support or ask a question..."
                                                 required
                                             />
-                                            <button 
+                                            <button
                                                 type="submit"
                                                 disabled={isSubmitting}
                                                 className="px-4 sm:px-6 py-2 sm:py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors text-sm sm:text-base"
@@ -719,7 +721,7 @@ const Detail = ({email}) => {
                                         </form>
                                     </div>
                                 )}
-    
+
                                 {activeTab === 'donors' && (
                                     <div className="py-2 sm:py-4">
                                         {fundraiser.donors && fundraiser.donors.length > 0 ? (
@@ -748,7 +750,7 @@ const Detail = ({email}) => {
                                         )}
                                     </div>
                                 )}
-    
+
                                 {activeTab === 'updates' && (
                                     <div className="py-2 sm:py-4">
                                         {fundraiser && fundraiser.updates && fundraiser.updates.length > 0 ? (
@@ -782,7 +784,7 @@ const Detail = ({email}) => {
                             </div>
                         </div>
                     </div>
-    
+
                     {/* Right Sidebar - Donation Card */}
                     <div className="w-full lg:w-1/3 order-1 lg:order-2 mb-6 lg:mb-0">
                         <div className="sticky top-16 sm:top-20">
@@ -794,14 +796,14 @@ const Detail = ({email}) => {
                                             <span className="text-xl sm:text-2xl font-bold text-emerald-600">₹{formatCurrency(raised)}</span>
                                             <span className="text-xs sm:text-sm text-gray-500 flex items-end">raised of ₹{formatCurrency(fundraiser.targetAmount)}</span>
                                         </div>
-                                        
+
                                         <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
-                                            <div 
+                                            <div
                                                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 ease-out"
                                                 style={{ width: `${Math.min(progress, 100)}%` }}
                                             ></div>
                                         </div>
-                                        
+
                                         <div className="flex justify-between items-center mt-2">
                                             <div className="flex items-center">
                                                 {/* Circle Progress */}
@@ -833,20 +835,20 @@ const Detail = ({email}) => {
                                                         <span className="text-xs sm:text-sm font-semibold">{Math.round(progress)}%</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div>
                                                     <p className="text-xs sm:text-sm text-gray-600">
                                                         <span className="font-medium">{donors}</span> people have donated
                                                     </p>
                                                 </div>
                                             </div>
-                                            
+
                                             <button className="p-1 sm:p-2 rounded-full hover:bg-gray-100 text-rose-500 transition-colors">
                                                 <Heart size={16} className="sm:w-5 sm:h-5" />
                                             </button>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Donation Form */}
                                     <div>
                                         <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2 sm:mb-3">Select amount to donate</h3>
@@ -855,17 +857,16 @@ const Detail = ({email}) => {
                                                 <button
                                                     key={amount}
                                                     onClick={() => setDonationAmount(amount)}
-                                                    className={`py-2 rounded-lg font-medium transition-all text-sm sm:text-base ${
-                                                        donationAmount === amount
+                                                    className={`py-2 rounded-lg font-medium transition-all text-sm sm:text-base ${donationAmount === amount
                                                             ? 'bg-emerald-100 text-emerald-600 border-2 border-emerald-500'
                                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     ₹{formatCurrency(amount)}
                                                 </button>
                                             ))}
                                         </div>
-                                        
+
                                         <div className="mb-3 sm:mb-4">
                                             <div className="relative">
                                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -880,20 +881,25 @@ const Detail = ({email}) => {
                                                 />
                                             </div>
                                         </div>
-                                        
-                                        <button 
+
+                                        <button
                                             onClick={handleDonateClick}
                                             className="w-full py-2 sm:py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg mb-3 sm:mb-4 flex items-center justify-center text-sm sm:text-base"
                                         >
-                                            <span className="mr-2" dangerouslySetInnerHTML={{ __html: googlePayLogo }} />
+                                            <img
+                                                src="https://www.pngrepo.com/download/353822/google-pay-icon.png"
+                                                alt="Google Pay"
+                                                className="w-6 h-6 mr-2"
+                                            />
+
                                             Donate with Google Pay
                                         </button>
-                                        
-                                       
+
+
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Safety Notice */}
                             <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200">
                                 <p className="text-xs sm:text-sm text-gray-600">
@@ -904,6 +910,7 @@ const Detail = ({email}) => {
                     </div>
                 </div>
             </div>
+            <Toaster/>
         </div>
     );
 }

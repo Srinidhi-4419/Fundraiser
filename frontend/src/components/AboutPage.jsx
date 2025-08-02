@@ -3,7 +3,6 @@ import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FaHandHoldingHeart, FaChartLine, FaSearch, FaUserShield, FaMobileAlt, FaUsers } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
 
 const AboutPage = () => {
   // Animations for sections coming into view

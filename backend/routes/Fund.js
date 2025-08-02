@@ -14,6 +14,7 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
+console.log(process.env.CLOUDINARY_API_KEY)
 
 // Multer setup for image upload (stores image as a buffer)
 const storage = multer.memoryStorage();

@@ -11,8 +11,6 @@ function ContactForm() {
   const [message, setMessage] = useState('');
 
   const handleSubmit = () => {
-    // Submit logic
-    console.log('Submitted', { name, message });
     setIsDialogOpen(false);
   };
 

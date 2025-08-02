@@ -94,25 +94,7 @@ router.put('/update', authmiddleware, async (req, res) => {
         msg: 'Updated successfully'
     });
 });
-// router.get('/bulk',async(req,res)=>{
-//     const filter=req.query.filter || "";
-    
-//     const users = await User.find({
-//         $or: [
-//             { firstname: { $regex: filter, $options: "i" } },
-//             { lastname: { $regex: filter, $options: "i" } }
-//         ]
-//     });
-//         res.json({
-//             user:users.map(user=>({
-//                 username:user.username,
-//                 firstname:user.firstname,
-//                 lastname:user.lastname,
-//                 _id:user._id
-//             }))
-//         })
-    
-// })
+
 router.post('/getinfo', async (req, res) => {
     try {
       const { username } = req.body;

@@ -44,7 +44,6 @@ const Signup = () => {
     }
     
     setLoading(true);
-    console.log('Form Data:', formdata);
     localStorage.setItem('email', formdata.username);
     
     try {
