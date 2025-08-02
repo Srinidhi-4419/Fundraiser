@@ -45,10 +45,11 @@ const Signup = () => {
     
     setLoading(true);
     localStorage.setItem('email', formdata.username);
-    
+  
+
     try {
       const response = await axios.post(
-        `${process.env.backend_url}/api/user/signup`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/signup`,
         formdata,
         {
           headers: { 'Content-Type': 'application/json' },

@@ -37,7 +37,7 @@ export function Seventh({ formdata, handlePrev }) {
       }
       const token = localStorage.getItem('authToken');
       const response = await axios.post(
-        `${process.env.backend_url}/api/fund/fundraisers`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/fund/fundraisers`,
         formData,
         {
           headers: {

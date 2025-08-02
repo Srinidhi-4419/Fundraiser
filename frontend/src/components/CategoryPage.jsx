@@ -9,7 +9,7 @@ export function CategoryPage() {
     useEffect(() => {
         const fetchCategoryFundraisers = async () => {
             try {
-                const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/category/${category}`);
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fund/fundraisers/category/${category}`);
                 if (response.ok) {
                     const data = await response.json();
                     setFundraisers(data);

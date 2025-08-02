@@ -50,7 +50,7 @@ const UpdateModal = ({ isOpen, onClose, fundraiserId, onUpdateAdded }) => {
     
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.post(`${process.env.backend_url}/api/fund/${fundraiserId}/updates`, 
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/fund/${fundraiserId}/updates`, 
         { title, content },
         { 
           headers: {
@@ -151,12 +151,12 @@ const UserDashboard = () => {
         };
   
         // Fetching dashboard summary (which now includes fundraisers)
-        const summaryResponse = await fetch(`${process.env.backend_url}api/user/dashboard-summary`, { headers });
+        const summaryResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/dashboard-summary`, { headers });
         if (!summaryResponse.ok) throw new Error("Failed to fetch dashboard summary");
         const summaryData = await summaryResponse.json();
   
         // Fetching donations
-        const donationsResponse = await fetch(`${process.env.backend_url}/api/user/donations`, { headers });
+        const donationsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/donations`, { headers });
         if (!donationsResponse.ok) throw new Error("Failed to fetch donations");
         const donationsData = await donationsResponse.json();
   
