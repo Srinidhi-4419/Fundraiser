@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Leftbox } from "../pages/Leftbox";
 import { First } from "./First";
 import { Second } from "./Second";
-import { Third } from "./third";
+import { Third } from "./Third";
 import { Fourth } from "./Fourth";
 import { Fifth } from "./Fifth";
 import { Six } from "./Six";
