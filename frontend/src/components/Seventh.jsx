@@ -37,12 +37,12 @@ export function Seventh({ formdata, handlePrev }) {
       }
       const token = localStorage.getItem('authToken');
       const response = await axios.post(
-        "http://localhost:3000/api/fund/fundraisers",
+        `${process.env.backend_url}/api/fund/fundraisers`,
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`  // ✅ Added Authorization Header
+        "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${token}`  // ✅ Added Authorization Header
           },
         }
       );

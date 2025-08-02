@@ -48,7 +48,7 @@ const Signup = () => {
     
     try {
       const response = await axios.post(
-        'http://localhost:3000/api/user/signup',
+        `${process.env.backend_url}/api/user/signup`,
         formdata,
         {
           headers: { 'Content-Type': 'application/json' },

@@ -11,7 +11,7 @@ export function Search() {
     useEffect(() => {
         const fetchFundraisers = async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/fund/fundraisers');
+                const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers`);
                 if (response.ok) {
                     const data = await response.json();
                     setFundraisers(data);
@@ -32,7 +32,7 @@ export function Search() {
         setSearchTerm(term);
 
         try {
-            const response = await fetch(`http://localhost:3000/api/fundraisers/search?title=${term}`);
+            const response = await fetch(`${process.env.backend_url}/api/fundraisers/search?title=${term}`);
             if (response.ok) {
                 const data = await response.json();
                 setFilteredFundraisers(data);

@@ -55,7 +55,7 @@ const Detail = ({ email }) => {
             setLoading(true);
             try {
                 // First fetch the fundraiser details
-                const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}`);
+                const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}`);
                 if (!response.ok) {
                     setFundraiser(null);
                     setLoading(false);
@@ -66,8 +66,9 @@ const Detail = ({ email }) => {
                 setFundraiser(data);
 
                 // Then fetch the donors for this fundraiser
+                
                 try {
-                    const donorsResponse = await fetch(`http://localhost:3000/api/fundraiser/${id}/donors`);
+                    const donorsResponse = await fetch(`${process.env.backend_url}/api/fundraiser/${id}/donors`);
                     if (donorsResponse.ok) {
                         const donorsData = await donorsResponse.json();
 
@@ -83,7 +84,7 @@ const Detail = ({ email }) => {
                     // We don't set fundraiser to null here as we already have the main data
                 }
                 try {
-                    const donorsCountResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/donors/count`);
+                    const donorsCountResponse = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}/donors/count`);
                     if (donorsCountResponse.ok) {
                         const countData = await donorsCountResponse.json();
                         if (countData.success) {
@@ -109,7 +110,7 @@ const Detail = ({ email }) => {
         const fetchUpdates = async () => {
             if (activeTab === 'updates') {
                 try {
-                    const response = await axios.get(`http://localhost:3000/api/fund/${id}/updates`);
+                    const response = await axios.get(`${process.env.backend_url}/api/fund/${id}/updates`);
 
                     // Debug the response
                     if (response.data.updates) {
@@ -186,7 +187,7 @@ const handlePaymentComplete = async () => {
         }
 
         // Step 1: Update the fundraiser amount
-        const paymentResponse = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/update-amount`, {
+        const paymentResponse = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}/update-amount`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -224,7 +225,7 @@ const handlePaymentComplete = async () => {
        
 
         if (username) {
-            const donorResponse = await fetch(`http://localhost:3000/api/user/fundraiser/add-donor`, {
+            const donorResponse = await fetch(`${process.env.backend_url}/api/user/fundraiser/add-donor`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -251,7 +252,7 @@ const handlePaymentComplete = async () => {
         }
 
         // Step 3: Record the donation
-        const donationResponse = await fetch(`http://localhost:3000/api/user/donate`, {
+        const donationResponse = await fetch(`${process.env.backend_url}/api/user/donate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -381,7 +382,7 @@ const handlePaymentComplete = async () => {
 
         try {
             const token = localStorage.getItem("authToken");
-            const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}/comments/${commentId}`, {
+            const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}/comments/${commentId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -432,7 +433,7 @@ const handlePaymentComplete = async () => {
         // Debug log
         try {
             const response = await axios.post(
-                `http://localhost:3000/api/fund/fundraisers/${id}/comments`,
+                `${process.env.backend_url}/api/fund/fundraisers/${id}/comments`,
                 { text: commentText },
                 {
                     headers: {

@@ -49,7 +49,7 @@ export function UpdateFundraisers() {
         async function fetchFundraiser() {
             try {
                 const token = localStorage.getItem("authToken");
-                const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}`, {
+                const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -128,7 +128,7 @@ export function UpdateFundraisers() {
             const formDataObj = new FormData();
             formDataObj.append('image', imageFile);
 
-            const response = await fetch('http://localhost:3000/api/fund/upload-image', {
+            const response = await fetch(`${process.env.backend_url}/api/fund/upload-image`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -167,7 +167,7 @@ export function UpdateFundraisers() {
             };
 
             const token = localStorage.getItem("authToken");
-            const response = await fetch(`http://localhost:3000/api/fund/fundraisers/${id}`, {
+            const response = await fetch(`${process.env.backend_url}/api/fund/fundraisers/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
